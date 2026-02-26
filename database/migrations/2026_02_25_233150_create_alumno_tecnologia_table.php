@@ -24,6 +24,8 @@ return new class extends Migration
 
             // La PK incluye el tipo para que un alumno pueda tener la misma tecno como CONOCE y como INTERES si se quisiera
             $table->primary(['id_alumno', 'id_tecnologia', 'tipo_relacion']);
+
+            $table->timestamps();
         });
     }
 
