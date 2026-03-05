@@ -3,37 +3,24 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\TecnologiaController;
+use App\Http\Controllers\Api\AlumnoController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
-
-// ==========================================
-// RUTAS PÚBLICAS (No requieren Token)
-// ==========================================
-
-// Login único (acepta param 'tipo': 'alumno', 'empresa', 'admin')
+// Públicas
 Route::post('/login', [AuthController::class, 'login']);
-
-// Registro específico de Alumnos
 Route::post('/register/alumno', [AuthController::class, 'registerAlumno']);
 
-// ==========================================
-// RUTAS PROTEGIDAS (Requieren Token Bearer)
-// ==========================================
-
+// Protegidas
 Route::middleware('auth:sanctum')->group(function () {
-
-    // Obtener el usuario que ha iniciado sesión
     Route::get('/user', function (Request $request) {
-        return response()->json([
-            'user' => $request->user(),
-            // Aquí podríamos devolver el rol si fuera necesario
-        ]);
+        return $request->user();
     });
-
-    // Cerrar sesión (Revocar token)
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Rutas Admin
+    Route::apiResource('tecnologias', TecnologiaController::class);
+
+    // Rutas Alumno
+    Route::get('/alumno/perfil', [AlumnoController::class, 'show']);
+    Route::put('/alumno/perfil', [AlumnoController::class, 'update']);
 });
