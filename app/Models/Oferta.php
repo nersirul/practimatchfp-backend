@@ -51,4 +51,23 @@ class Oferta extends Model
     {
         return $this->hasMany(Practica::class, 'id_oferta', 'id_oferta');
     }
+
+    // --- SCOPES (Para el buscador del Alumno) ---
+    public function scopeFiltros($query, $filtros)
+    {
+        // Filtro por Modalidad (REMOTO, PRESENCIAL, HIBRIDO)
+        if (isset($filtros['modalidad']) && $filtros['modalidad'] !== '') {
+            $query->where('modalidad', $filtros['modalidad']);
+        }
+
+        // Filtro por Tecnología (Recibe un array de IDs)
+        if (isset($filtros['tecnologias']) && is_array($filtros['tecnologias']) && count($filtros['tecnologias']) > 0) {
+            $query->whereHas('tecnologias', function ($q) use ($filtros) {
+                $q->whereIn('tecnologias.id_tecnologia', $filtros['tecnologias']);
+            });
+        }
+
+        // Solo mostrar las que están aprobadas (PUBLICADA)
+        return $query->where('estado', 'PUBLICADA');
+    }
 }

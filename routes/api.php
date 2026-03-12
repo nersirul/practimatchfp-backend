@@ -23,4 +23,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas Alumno
     Route::get('/alumno/perfil', [AlumnoController::class, 'show']);
     Route::put('/alumno/perfil', [AlumnoController::class, 'update']);
+
+    // --- RUTAS DE OFERTAS ---
+    // Alumnos (Buscador)
+    Route::get('/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'index']);
+
+    // Empresas
+    Route::get('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'misOfertas']);
+    Route::post('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'store']);
+
+    // Admins
+    Route::get('/admin/ofertas/pendientes', [\App\Http\Controllers\Api\OfertaController::class, 'pendientes']);
+    Route::put('/admin/ofertas/{id}/validar', [\App\Http\Controllers\Api\OfertaController::class, 'validar']);
 });
