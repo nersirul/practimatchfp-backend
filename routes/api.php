@@ -27,12 +27,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- RUTAS DE OFERTAS ---
     // Alumnos (Buscador)
     Route::get('/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'index']);
+    Route::get('/ofertas/{id}', [\App\Http\Controllers\Api\OfertaController::class, 'show']);
+    Route::post('/ofertas/{id_oferta}/solicitar', [\App\Http\Controllers\Api\PracticaController::class, 'solicitar']);
+    Route::get('/alumno/candidaturas', [\App\Http\Controllers\Api\PracticaController::class, 'misCandidaturas']);
 
     // Empresas
     Route::get('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'misOfertas']);
     Route::post('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'store']);
     Route::get('/empresa/perfil', [\App\Http\Controllers\Api\EmpresaController::class, 'show']);
     Route::put('/empresa/perfil', [\App\Http\Controllers\Api\EmpresaController::class, 'update']);
+    Route::get('/empresa/ofertas/{id_oferta}/candidatos', [\App\Http\Controllers\Api\PracticaController::class, 'candidatosPorOferta']);
+    Route::put('/empresa/practicas/{id_practica}/estado', [\App\Http\Controllers\Api\PracticaController::class, 'actualizarEstado']);
 
     // Admins
     Route::get('/admin/ofertas/pendientes', [\App\Http\Controllers\Api\OfertaController::class, 'pendientes']);

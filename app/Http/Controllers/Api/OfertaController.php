@@ -100,4 +100,13 @@ class OfertaController extends Controller
 
         return response()->json(['message' => 'Oferta actualizada a ' . $request->estado]);
     }
+
+    // ALUMNO: Ver detalle de una oferta pública
+    public function show($id)
+    {
+        $oferta = Oferta::with(['empresa:id_empresa,nombre_comercial,ciudad,descripcion', 'tecnologias'])
+            ->where('estado', 'PUBLICADA')
+            ->findOrFail($id);
+        return response()->json($oferta);
+    }
 }
