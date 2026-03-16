@@ -18,6 +18,7 @@ class Practica extends Model
         'fecha_inicio',
         'fecha_fin',
         'estado',
+        'id_profesor',
     ];
 
     protected $casts = [
@@ -47,5 +48,11 @@ class Practica extends Model
     public function valoracion()
     {
         return $this->hasOne(Valoracion::class, 'id_practica', 'id_practica');
+    }
+
+    // Pertenece a un Profesor (supervisor)
+    public function profesor()
+    {
+        return $this->belongsTo(Profesor::class, 'id_profesor', 'id_profesor');
     }
 }

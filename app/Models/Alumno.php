@@ -22,6 +22,9 @@ class Alumno extends Authenticatable
         'password',
         'ciclo',
         'modalidad_preferida',
+        'telefono',
+        'direccion',
+        'ciudad',
     ];
 
     protected $hidden = [

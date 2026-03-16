@@ -31,6 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Empresas
     Route::get('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'misOfertas']);
     Route::post('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'store']);
+    Route::get('/empresa/perfil', [\App\Http\Controllers\Api\EmpresaController::class, 'show']);
+    Route::put('/empresa/perfil', [\App\Http\Controllers\Api\EmpresaController::class, 'update']);
 
     // Admins
     Route::get('/admin/ofertas/pendientes', [\App\Http\Controllers\Api\OfertaController::class, 'pendientes']);

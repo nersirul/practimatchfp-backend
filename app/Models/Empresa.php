@@ -24,6 +24,7 @@ class Empresa extends Authenticatable
         'email_contacto',
         'password',
         'descripcion',
+        'telefono_contacto',
     ];
 
     protected $hidden = [

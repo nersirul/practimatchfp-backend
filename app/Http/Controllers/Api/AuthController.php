@@ -18,7 +18,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-            'tipo' => 'required|in:alumno,empresa,admin'
+            'tipo' => 'required|in:alumno,empresa,admin,profesor',
         ]);
 
         $user = null;
@@ -34,6 +34,9 @@ class AuthController extends Controller
                 break;
             case 'admin':
                 $user = Administrador::where('email', $request->email)->first();
+                break;
+            case 'profesor':
+                $user = \App\Models\Profesor::where('email', $request->email)->first();
                 break;
         }
 

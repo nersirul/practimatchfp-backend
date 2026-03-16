@@ -10,6 +10,7 @@ use App\Models\Alumno;
 use App\Models\Categoria;
 use App\Models\Tecnologia;
 use App\Models\Oferta;
+use App\Models\Profesor;
 
 class DatabaseSeeder extends Seeder
 {
@@ -41,7 +42,10 @@ class DatabaseSeeder extends Seeder
             'email_contacto' => 'rrhh@tech.com',
             'password' => Hash::make('password'),
             'sector' => 'Consultoría',
-            'descripcion' => 'Empresa líder en desarrollo web.'
+            'descripcion' => 'Empresa líder en desarrollo web.',
+            'telefono_contacto' => '911222333',
+            'direccion' => 'Av. Tecnológica 5',
+            'ciudad' => 'Madrid',
         ]);
 
         // 4. Crear Alumnos
@@ -52,7 +56,10 @@ class DatabaseSeeder extends Seeder
             'email' => 'juan@alumno.com',
             'password' => Hash::make('password'),
             'ciclo' => 'DAW',
-            'modalidad_preferida' => 'HIBRIDO'
+            'modalidad_preferida' => 'HIBRIDO',
+            'telefono' => '655444333',
+            'direccion' => 'Calle Principal 1',
+            'ciudad' => 'Madrid',
         ]);
 
         // Asignar tecnología al alumno (Sabe PHP nivel 8)
@@ -70,5 +77,15 @@ class DatabaseSeeder extends Seeder
 
         // La oferta requiere PHP
         $oferta->tecnologias()->attach($php->id_tecnologia);
+
+        // 6. Crear Profesor
+        Profesor::create([
+            'nombre' => 'Marta',
+            'apellidos' => 'Tutor',
+            'email' => 'marta@instituto.com',
+            'password' => Hash::make('password'),
+            'telefono' => '600111222',
+            'departamento' => 'Informática'
+        ]);
     }
 }
