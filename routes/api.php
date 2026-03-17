@@ -42,4 +42,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admins
     Route::get('/admin/ofertas/pendientes', [\App\Http\Controllers\Api\OfertaController::class, 'pendientes']);
     Route::put('/admin/ofertas/{id}/validar', [\App\Http\Controllers\Api\OfertaController::class, 'validar']);
+
+    // --- RUTAS DE PROFESOR Y PDF ---
+    Route::get('/profesor/practicas', [\App\Http\Controllers\Api\ProfesorController::class, 'practicasSupervisadas']);
+    Route::post('/profesor/practicas/{id_practica}/evaluar', [\App\Http\Controllers\Api\ProfesorController::class, 'evaluar']);
+
+    // Esta ruta la pueden usar el Profesor, el Alumno y la Empresa para descargar el PDF
+    Route::get('/practicas/{id_practica}/pdf', [\App\Http\Controllers\Api\ProfesorController::class, 'descargarPDF']);
 });
