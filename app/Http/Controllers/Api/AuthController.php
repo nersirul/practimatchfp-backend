@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\Models\Alumno;
 use App\Models\Empresa;
+use App\Models\Profesor;
 use App\Models\Administrador;
 
 class AuthController extends Controller
@@ -89,5 +90,78 @@ class AuthController extends Controller
         // Borra el token actual
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Sesión cerrada']);
+    }
+
+    public function registro(Request $request)
+    {
+        $request->validate([
+            'tipo' => 'required|in:alumno,empresa,profesor',
+            'password' => 'required|min:6'
+        ]);
+
+        if ($request->tipo === 'alumno') {
+            $request->validate([
+                'nif' => 'required|string|unique:alumnos,nif',
+                'nombre' => 'required|string|max:255',
+                'apellidos' => 'required|string|max:255',
+                'email' => 'required|email|unique:alumnos,email',
+                'ciclo' => 'required|string',
+                'telefono' => 'nullable|string',
+                'direccion' => 'nullable|string',
+                'ciudad' => 'nullable|string',
+            ]);
+
+            Alumno::create([
+                'nif' => $request->nif,
+                'nombre' => $request->nombre,
+                'apellidos' => $request->apellidos,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'ciclo' => $request->ciclo,
+                'telefono' => $request->telefono,
+                'direccion' => $request->direccion,
+                'ciudad' => $request->ciudad,
+            ]);
+        } elseif ($request->tipo === 'empresa') {
+            $request->validate([
+                'cif' => 'required|string|unique:empresas,cif',
+                'nombre_comercial' => 'required|string|max:255',
+                'email' => 'required|email|unique:empresas,email_contacto',
+                'telefono_contacto' => 'required|string', // Obligatorio para empresas
+                'direccion' => 'required|string',
+                'ciudad' => 'required|string',
+                'descripcion' => 'nullable|string',
+            ]);
+
+            Empresa::create([
+                'cif' => $request->cif,
+                'nombre_comercial' => $request->nombre_comercial,
+                'email_contacto' => $request->email,
+                'password' => Hash::make($request->password),
+                'telefono_contacto' => $request->telefono_contacto,
+                'direccion' => $request->direccion,
+                'ciudad' => $request->ciudad,
+                'descripcion' => $request->descripcion,
+            ]);
+        } elseif ($request->tipo === 'profesor') {
+            $request->validate([
+                'nombre' => 'required|string|max:255',
+                'apellidos' => 'required|string|max:255',
+                'email' => 'required|email|unique:profesores,email',
+                'departamento' => 'required|string',
+                'telefono' => 'nullable|string',
+            ]);
+
+            Profesor::create([
+                'nombre' => $request->nombre,
+                'apellidos' => $request->apellidos,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'departamento' => $request->departamento,
+                'telefono' => $request->telefono,
+            ]);
+        }
+
+        return response()->json(['message' => 'Usuario registrado con éxito.'], 201);
     }
 }

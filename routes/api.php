@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AlumnoController;
 
 // Públicas
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/registro', [\App\Http\Controllers\Api\AuthController::class, 'registro']);
 Route::post('/register/alumno', [AuthController::class, 'registerAlumno']);
 
 // Protegidas
