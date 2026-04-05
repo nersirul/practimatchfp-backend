@@ -20,6 +20,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas Admin
     Route::apiResource('tecnologias', TecnologiaController::class);
+    Route::get('/admin/empresas/pendientes', [\App\Http\Controllers\Api\AdminUserController::class, 'empresasPendientes']);
+    Route::put('/admin/empresas/{id}/validar', [\App\Http\Controllers\Api\AdminUserController::class, 'validarEmpresa']);
+
+    Route::get('/admin/usuarios/{tipo}', [\App\Http\Controllers\Api\AdminUserController::class, 'index']);
+    Route::put('/admin/usuarios/{tipo}/{id}', [\App\Http\Controllers\Api\AdminUserController::class, 'update']);
+    Route::delete('/admin/usuarios/{tipo}/{id}', [\App\Http\Controllers\Api\AdminUserController::class, 'destroy']);
 
     // Rutas Alumno
     Route::get('/alumno/perfil', [AlumnoController::class, 'show']);

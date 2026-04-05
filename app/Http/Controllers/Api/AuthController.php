@@ -23,7 +23,6 @@ class AuthController extends Controller
         ]);
 
         $user = null;
-        $model = null;
 
         // Seleccionamos el modelo según el tipo
         switch ($request->tipo) {
@@ -41,7 +40,22 @@ class AuthController extends Controller
                 break;
         }
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        // 1. Verificamos que el usuario existe en la base de datos
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'email' => ['Las credenciales son incorrectas.'],
+            ]);
+        }
+
+        // 2. Si es empresa, existe, pero no está activa, bloqueamos el acceso
+        if ($request->tipo === 'empresa' && $user->activa == false) {
+            throw ValidationException::withMessages([
+                'email' => ['Tu cuenta de empresa está pendiente de validación por el centro educativo.'],
+            ]);
+        }
+
+        // 3. Verificamos que la contraseña es correcta
+        if (! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales son incorrectas.'],
             ]);
