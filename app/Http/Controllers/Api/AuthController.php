@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Controlador de API - AuthController
+ * 
+ * Núcleo de autenticación. Maneja la emisión de Tokens (Sanctum),
+ * los registros dinámicos según el perfil y el inicio de sesión.
+ * 
+ * @package App\Http\Controllers\Api
+ */
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -13,7 +22,17 @@ use App\Models\Administrador;
 
 class AuthController extends Controller
 {
-    // LOGIN GENERAL (Recibe email, password y tipo)
+    /**
+     * Endpoint de Autenticación (Login Múltiple).
+     * 
+     * Recibe correo electrónico, contraseña y un string identificando qué "tipo"
+     * de perfil está intentando acceder. Realiza las validaciones de negocio
+     * (por ejemplo, comprobar si una empresa está activada) y retorna el token.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Validation\ValidationException Si la autenticación falla.
+     */
     public function login(Request $request)
     {
         $request->validate([
@@ -24,13 +43,13 @@ class AuthController extends Controller
 
         $user = null;
 
-        // Seleccionamos el modelo según el tipo
+        // Recuperar al modelo instanciado desde su propia tabla según el select del frontend
         switch ($request->tipo) {
             case 'alumno':
                 $user = Alumno::where('email', $request->email)->first();
                 break;
             case 'empresa':
-                $user = Empresa::where('email_contacto', $request->email)->first(); // Ojo, el campo es email_contacto
+                $user = Empresa::where('email_contacto', $request->email)->first();
                 break;
             case 'admin':
                 $user = Administrador::where('email', $request->email)->first();
@@ -40,29 +59,28 @@ class AuthController extends Controller
                 break;
         }
 
-        // 1. Verificamos que el usuario existe en la base de datos
+        // Comprobar que realmente existía ese registro en la base de datos
         if (! $user) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales son incorrectas.'],
             ]);
         }
 
-        // 2. Si es empresa, existe, pero no está activa, bloqueamos el acceso
+        // Las empresas requieren un chequeo de seguridad extra
         if ($request->tipo === 'empresa' && $user->activa == false) {
             throw ValidationException::withMessages([
                 'email' => ['Tu cuenta de empresa está pendiente de validación por el centro educativo.'],
             ]);
         }
 
-        // 3. Verificamos que la contraseña es correcta
+        // Validar que el Hash de la BD concuerde con la pass en texto plano
         if (! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales son incorrectas.'],
             ]);
         }
 
-        // Creamos el token (Sanctum)
-        // El nombre del token incluye el rol para identificarlo luego si hace falta
+        // Generar un token único asilando el Rol en su metadata de Sanctum
         $token = $user->createToken($request->tipo . '-token')->plainTextToken;
 
         return response()->json([
@@ -73,7 +91,14 @@ class AuthController extends Controller
         ]);
     }
 
-    // REGISTRO ALUMNO
+    /**
+     * Registro rápido exclusivo para alumnos (Legacy / Alternatif).
+     * 
+     * Usado internamente o en flujos reducidos si fuera necesario.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function registerAlumno(Request $request)
     {
         $request->validate([
@@ -90,7 +115,7 @@ class AuthController extends Controller
             'nif' => $request->nif,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'modalidad_preferida' => 'PRESENCIAL' // Valor por defecto
+            'modalidad_preferida' => 'PRESENCIAL' // Asiganación por defecto
         ]);
 
         return response()->json([
@@ -99,13 +124,30 @@ class AuthController extends Controller
         ], 201);
     }
 
+    /**
+     * Cierre limpio de sesión.
+     * 
+     * Invalida (borrando de la BD de Sanctum) el token exacto con el que 
+     * el usuario hizo la petición actual, sin desconectarlo de otros dispositivos.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function logout(Request $request)
     {
-        // Borra el token actual
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Sesión cerrada']);
     }
 
+    /**
+     * Endpoint de Registro Unificado inteligente.
+     * 
+     * Valida según reglas distintas la creación de alumno, empresa o profesor en 
+     * base a lo emitido por el formulario único de react.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function registro(Request $request)
     {
         $request->validate([
@@ -141,7 +183,7 @@ class AuthController extends Controller
                 'cif' => 'required|string|unique:empresas,cif',
                 'nombre_comercial' => 'required|string|max:255',
                 'email' => 'required|email|unique:empresas,email_contacto',
-                'telefono_contacto' => 'required|string', // Obligatorio para empresas
+                'telefono_contacto' => 'required|string',
                 'direccion' => 'required|string',
                 'ciudad' => 'required|string',
                 'descripcion' => 'nullable|string',

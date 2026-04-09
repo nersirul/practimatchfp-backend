@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Controlador de API - AdminUserController
+ * 
+ * Gestiona el panel de control del SuperAdministrador.
+ * Proporciona métodos para verificar, validar y borrar usuarios (SoftDelete) del sistema.
+ * 
+ * @package App\Http\Controllers\Api
+ */
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -13,13 +22,28 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminUserController extends Controller
 {
-    // 1. VALIDACIÓN DE EMPRESAS
+    /**
+     * Obtener listado de empresas no validadas.
+     * 
+     * Retorna todas las empresas registradas que todavía tienen el campo activa=false.
+     * 
+     * @return \Illuminate\Http\JsonResponse JSON con el array de empresas.
+     */
     public function empresasPendientes()
     {
         $empresas = Empresa::where('activa', false)->get();
         return response()->json($empresas);
     }
 
+    /**
+     * Validar Empresa.
+     * 
+     * Activa una empresa cambiándole el estado en la base de datos a true.
+     * Esto le permitirá loguearse y que sus ofertas empiecen a indexarse.
+     * 
+     * @param int $id ID de la empresa a validar.
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function validarEmpresa($id)
     {
         $empresa = Empresa::findOrFail($id);
@@ -27,10 +51,14 @@ class AdminUserController extends Controller
         return response()->json(['message' => 'Empresa validada y activada con éxito.']);
     }
 
-    // 2. LISTADO DINÁMICO DE USUARIOS
+    /**
+     * Listado dinámico de usuarios según su rol.
+     * 
+     * @param string $tipo Tipo de usuario ('alumnos', 'empresas', 'profesores', 'administradores').
+     * @return \Illuminate\Http\JsonResponse JSON con la colección de usuarios correspondientes.
+     */
     public function index($tipo)
     {
-        // El administrador pide ver una lista (alumnos, empresas, profesores)
         switch ($tipo) {
             case 'alumnos':
                 return response()->json(Alumno::all());
@@ -45,15 +73,26 @@ class AdminUserController extends Controller
         }
     }
 
-    // 3. ACTUALIZAR DATOS / CONTRASEÑA
+    /**
+     * Actualizar datos o contraseña de cualquier usuario del sistema.
+     *
+     * Permite al administrador editar la información desde el panel de control.
+     * Encripta automáticamente la nueva contraseña si se provee.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @param string $tipo El perfil o rol del usuario
+     * @param int $id ID del usuario a modificar
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function update(Request $request, $tipo, $id)
     {
         $modelo = $this->getModelInstance($tipo, $id);
         if (!$modelo) return response()->json(['error' => 'Usuario no encontrado'], 404);
 
-        $datos = $request->except(['password']); // Cogemos todo menos la pass
+        // Cogemos todos los campos modificados salvo la contraseña para tratarla aparte.
+        $datos = $request->except(['password']); 
 
-        // Si el admin envía una contraseña nueva, la encriptamos
+        // Si el payload contiene una contraseña, la preparamos hasheándola.
         if ($request->filled('password')) {
             $datos['password'] = Hash::make($request->password);
         }
@@ -62,10 +101,20 @@ class AdminUserController extends Controller
         return response()->json(['message' => 'Usuario actualizado correctamente']);
     }
 
-    // 4. BORRADO LÓGICO (Soft Delete)
+    /**
+     * Borrado lógico de un usuario (Soft Delete).
+     * 
+     * Permuta el registro a estado "eliminado" sin borrar de la base de datos realmente,
+     * útil para no romper referencias de FK en prácticas ya asociadas.
+     * Previene que un administrador se de de baja a sí mismo y quede el sistema huérfano.
+     * 
+     * @param string $tipo El rol especificado del usuario.
+     * @param int $id ID del usuario atado al rol.
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy($tipo, $id)
     {
-        // PROTECCIÓN: El admin no puede borrarse a sí mismo
+        // Medida de seguridad: el superadmin activo no puede autodestruirse.
         if ($tipo === 'administradores' && $id == Auth::user()->id_admin) {
             return response()->json(['error' => 'Operación denegada. No puedes darte de baja a ti mismo.'], 403);
         }
@@ -73,11 +122,21 @@ class AdminUserController extends Controller
         $modelo = $this->getModelInstance($tipo, $id);
         if (!$modelo) return response()->json(['error' => 'Usuario no encontrado'], 404);
 
-        $modelo->delete(); // Esto hace el SoftDelete automático
+        // Ejecuta SoftDelete según Trait del modelo.
+        $modelo->delete(); 
+        
         return response()->json(['message' => 'Usuario dado de baja correctamente']);
     }
 
-    // Función auxiliar para no repetir código
+    /**
+     * Factory Method (Función auxiliar).
+     * 
+     * Devuelve una instancia concreta del modelo Eloquent según el string provisto, o nulo.
+     * 
+     * @param string $tipo Selector de tipo de usuario.
+     * @param int $id Identificador primario.
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
     private function getModelInstance($tipo, $id)
     {
         switch ($tipo) {

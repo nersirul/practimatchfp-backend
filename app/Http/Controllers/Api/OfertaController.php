@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Controlador de API - OfertaController
+ * 
+ * Orquesta casi todo el ciclo de vida de la clase Oferta (creación, validación, publicación).
+ * Implementa métodos consumidos asimétricamente por Alumnos, Empresas y Administradores.
+ * 
+ * @package App\Http\Controllers\Api
+ */
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -9,27 +18,43 @@ use Illuminate\Support\Facades\Auth;
 
 class OfertaController extends Controller
 {
-    // 1. ALUMNO: Buscador público de ofertas (Usa el Scope que creamos)
+    /**
+     * Buscador de Ofertas para Alumnos.
+     * 
+     * Retorna mediante paginación las vacantes que están "PUBLICADAS", 
+     * permitiendo usar filtros opcionales de 'modalidad' o array de 'tecnologias'
+     * procesados a través del Scope Local del Modelo Oferta.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function index(Request $request)
     {
-        // Obtenemos los filtros por querystring (?modalidad=REMOTO&tecnologias[]=1)
         $filtros = $request->only(['modalidad', 'tecnologias']);
 
         $ofertas = Oferta::with(['empresa:id_empresa,nombre_comercial,ciudad', 'tecnologias'])
             ->filtros($filtros)
             ->orderBy('created_at', 'desc')
-            ->paginate(10); // Paginación para no saturar la vista
+            ->paginate(10); 
 
         return response()->json($ofertas);
     }
 
-    // 2. EMPRESA: Ver solo mis ofertas
+    /**
+     * Panel privado de Ofertas propias (Empresas).
+     * 
+     * Devuelve a la empresa un listado de *todas* las ofertas que ha creado ella misma,
+     * inyectando un contador 'practicas_count' para saber el volumen de solicitantes que tiene cada una.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function misOfertas()
     {
         $user = Auth::user();
         if (!$user->id_empresa) return response()->json(['error' => 'No autorizado'], 403);
 
         $ofertas = Oferta::with('tecnologias')
+            ->withCount('practicas') 
             ->where('id_empresa', $user->id_empresa)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -37,7 +62,15 @@ class OfertaController extends Controller
         return response()->json($ofertas);
     }
 
-    // 3. EMPRESA: Crear nueva oferta
+    /**
+     * Publicar o registrar una nueva Oferta (Empresas).
+     * 
+     * Instancia un requerimiento de Prácticas para que el colegio lo valide.
+     * Por defecto arranca en estado "PENDIENTE".
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -47,10 +80,9 @@ class OfertaController extends Controller
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'modalidad' => 'required|in:REMOTO,PRESENCIAL,HIBRIDO',
-            'tecnologias' => 'array' // Array de IDs de tecnologías requeridas
+            'tecnologias' => 'array' 
         ]);
 
-        // La oferta nace PENDIENTE por defecto
         $oferta = Oferta::create([
             'id_empresa' => $user->id_empresa,
             'titulo' => $request->titulo,
@@ -61,7 +93,7 @@ class OfertaController extends Controller
             'estado' => 'PENDIENTE'
         ]);
 
-        // Relacionamos las tecnologías en la tabla pivote
+        // Vincula los requerimientos técnicos vía tabla intermedia
         if ($request->has('tecnologias')) {
             $oferta->tecnologias()->attach($request->tecnologias);
         }
@@ -69,10 +101,16 @@ class OfertaController extends Controller
         return response()->json(['message' => 'Oferta enviada a validación', 'oferta' => $oferta], 201);
     }
 
-    // 4. ADMIN: Ver ofertas pendientes de validación
+    /**
+     * Bandeja de Revisión para Administradores.
+     * 
+     * Muestra a los coordinadores del FCT las ofertas de las empresas que acaban de llegar
+     * y están esperando sanción ("PENDIENTE").
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function pendientes()
     {
-        // Solo admins deberían llegar aquí (lo protegeremos en las rutas)
         $ofertas = Oferta::with(['empresa:id_empresa,nombre_comercial', 'tecnologias'])
             ->where('estado', 'PENDIENTE')
             ->orderBy('created_at', 'asc')
@@ -81,32 +119,50 @@ class OfertaController extends Controller
         return response()->json($ofertas);
     }
 
-    // 5. ADMIN: Validar oferta (Aprobar o Rechazar)
+    /**
+     * Resolución de Adminitrador (Validar/Rechazar).
+     * 
+     * Toma una decisión vinculante sobre la publicación de la Oferta y archiva la
+     * firma del administrador que lo autorizó.
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @param int $id ID de la oferta bajo inspección.
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function validar(Request $request, $id)
     {
         $admin = Auth::user();
         if (!$admin->id_admin) return response()->json(['error' => 'No autorizado'], 403);
 
         $request->validate([
-            'estado' => 'required|in:PUBLICADA,CERRADA' // CERRADA funciona como rechazada en nuestro enum
+            'estado' => 'required|in:PUBLICADA,CERRADA' 
         ]);
 
         $oferta = Oferta::findOrFail($id);
 
         $oferta->update([
             'estado' => $request->estado,
-            'id_admin_validador' => $admin->id_admin // Registramos quién la aprobó
+            'id_admin_validador' => $admin->id_admin 
         ]);
 
         return response()->json(['message' => 'Oferta actualizada a ' . $request->estado]);
     }
 
-    // ALUMNO: Ver detalle de una oferta pública
+    /**
+     * Endpoint de Ficha Pública de la Oferta (Alumnos).
+     * 
+     * Despliega en pantalla grande los detalles plenos de la vacante seleccionada,
+     * asegurándose que la url no pueda espiar ofertas privadas (forzando validación de estado=PUBLICADA).
+     * 
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function show($id)
     {
         $oferta = Oferta::with(['empresa:id_empresa,nombre_comercial,ciudad,descripcion', 'tecnologias'])
             ->where('estado', 'PUBLICADA')
             ->findOrFail($id);
+            
         return response()->json($oferta);
     }
 }

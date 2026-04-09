@@ -1,3 +1,8 @@
+{{-- 
+    Plantilla HTML/Blade - Informe de Prácticas
+    Diseñada de manera minimalista para ser inyectada y renderizada por DOMPDF 
+    y crear el acta final de evaluación oficial.
+--}}
 <!DOCTYPE html>
 <html lang="es">
 <head>

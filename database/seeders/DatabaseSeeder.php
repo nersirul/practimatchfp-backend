@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * Seeder de Base de Datos - DatabaseSeeder
+ * 
+ * Clase central para poblar la base de datos con información inicial ("dummy data").
+ * Genera perfiles de usuario, categorías, tecnologías base y establece el marco
+ * de una oferta y práctica de prueba para propósitos de demostración y testing.
+ * 
+ * Se invoca mediante: php artisan db:seed
+ * 
+ * @package Database\Seeders
+ */
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -14,16 +26,23 @@ use App\Models\Profesor;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Ejecuta las semillas en la base de datos.
+     * 
+     * El orden de inserción es crítico para no infligir restricciones de llaves foráneas.
+     *
+     * @return void
+     */
     public function run(): void
     {
-        // 1. Crear Administradores
+        // 1. Crear usuario Administrador (Super Admin)
         Administrador::create([
             'nombre' => 'Super Admin',
             'email' => 'admin@practimatch.com',
-            'password' => Hash::make('password'), // La contraseña es 'password'
+            'password' => Hash::make('password'), 
         ]);
 
-        // 2. Crear Categorias y Tecnologías
+        // 2. Crear Diccionario Básico de Categorías y Tecnologías
         $catWeb = Categoria::create(['nombre' => 'Desarrollo Web']);
         $catSys = Categoria::create(['nombre' => 'Sistemas']);
 
@@ -31,11 +50,11 @@ class DatabaseSeeder extends Seeder
         $js = Tecnologia::create(['nombre' => 'JavaScript']);
         $linux = Tecnologia::create(['nombre' => 'Linux']);
 
-        // Relacionar (Pivot)
+        // Vinculaciones pivot: Unir tecnologías a sus respectivas categorías
         $catWeb->tecnologias()->attach([$php->id_tecnologia, $js->id_tecnologia]);
         $catSys->tecnologias()->attach($linux->id_tecnologia);
 
-        // 3. Crear Empresas
+        // 3. Crear Perfil Empresa pre-activado
         $empresa1 = Empresa::create([
             'nombre_comercial' => 'Tech Solutions',
             'cif' => 'B12345678',
@@ -47,8 +66,10 @@ class DatabaseSeeder extends Seeder
             'direccion' => 'Av. Tecnológica 5',
             'ciudad' => 'Madrid',
         ]);
+        // Forzamos que la empresa esté activa simulando que el admin la validó
+        $empresa1->update(['activa' => true]);
 
-        // 4. Crear Alumnos
+        // 4. Crear Perfil de Alumno
         $alumno1 = Alumno::create([
             'nombre' => 'Juan',
             'apellidos' => 'Pérez',
@@ -62,23 +83,23 @@ class DatabaseSeeder extends Seeder
             'ciudad' => 'Madrid',
         ]);
 
-        // Asignar tecnología al alumno (Sabe PHP nivel 8)
+        // Inyectar conocimientos en el perfil de "Juan"
         $alumno1->tecnologias()->attach($php->id_tecnologia, ['tipo_relacion' => 'CONOCE', 'nivel' => 8]);
 
-        // 5. Crear Oferta
+        // 5. Instanciar una Oferta Pública para el buscador
         $oferta = Oferta::create([
             'id_empresa' => $empresa1->id_empresa,
-            'id_admin_validador' => 1, // Validada por el admin 1
+            'id_admin_validador' => 1, 
             'titulo' => 'Desarrollador Junior Laravel',
             'descripcion' => 'Buscamos gente con ganas.',
             'modalidad' => 'REMOTO',
             'estado' => 'PUBLICADA'
         ]);
 
-        // La oferta requiere PHP
+        // Declarar requisitos para esta oferta
         $oferta->tecnologias()->attach($php->id_tecnologia);
 
-        // 6. Crear Profesor
+        // 6. Crear un Tutor / Supervisor
         Profesor::create([
             'nombre' => 'Marta',
             'apellidos' => 'Tutor',
