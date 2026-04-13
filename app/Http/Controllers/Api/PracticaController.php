@@ -118,8 +118,15 @@ class PracticaController extends Controller
 
         $practica = Practica::with('oferta')->findOrFail($id_practica);
 
-        if ($practica->oferta->id_empresa !== $user->id_empresa) {
-            return response()->json(['error' => 'No autorizado'], 403);
+        if ($request->estado === 'ESPERANDO_TUTOR' && $practica->oferta->vacantes !== null) {
+            // Contamos cuántos alumnos ya están ocupando una plaza en esta oferta
+            $plazasOcupadas = Practica::where('id_oferta', $practica->id_oferta)
+                ->whereIn('estado', ['ESPERANDO_TUTOR', 'EN_CURSO', 'FINALIZADA'])
+                ->count();
+
+            if ($plazasOcupadas >= $practica->oferta->vacantes) {
+                return response()->json(['error' => 'No puedes aceptar más candidatos. Has alcanzado el límite de vacantes (' . $practica->oferta->vacantes . ').'], 400);
+            }
         }
 
         $practica->update(['estado' => $request->estado]);

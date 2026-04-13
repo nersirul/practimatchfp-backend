@@ -33,9 +33,11 @@ class OfertaController extends Controller
         $filtros = $request->only(['modalidad', 'tecnologias']);
 
         $ofertas = Oferta::with(['empresa:id_empresa,nombre_comercial,ciudad', 'tecnologias'])
+            ->where('estado', 'PUBLICADA') // Muro 1: Solo ofertas validadas por el Admin
+            ->where('activa', true)        // Muro 2 (Sprint 8): Solo ofertas NO pausadas por la Empresa
             ->filtros($filtros)
             ->orderBy('created_at', 'desc')
-            ->paginate(10); 
+            ->paginate(10);
 
         return response()->json($ofertas);
     }
@@ -80,6 +82,7 @@ class OfertaController extends Controller
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
             'modalidad' => 'required|in:REMOTO,PRESENCIAL,HIBRIDO',
+            'vacantes' => 'nullable|integer|min:1',
             'tecnologias' => 'array' 
         ]);
 
@@ -90,6 +93,7 @@ class OfertaController extends Controller
             'modalidad' => $request->modalidad,
             'es_remunerada' => $request->es_remunerada ?? false,
             'posibilidad_contratacion' => $request->posibilidad_contratacion ?? false,
+            'vacantes' => $request->vacantes,
             'estado' => 'PENDIENTE'
         ]);
 
@@ -164,5 +168,18 @@ class OfertaController extends Controller
             ->findOrFail($id);
             
         return response()->json($oferta);
+    }
+
+    public function toggleActiva($id_oferta)
+    {
+        $empresa = Auth::user();
+        $oferta = Oferta::where('id_empresa', $empresa->id_empresa)->findOrFail($id_oferta);
+
+        $oferta->update(['activa' => !$oferta->activa]);
+
+        return response()->json([
+            'message' => $oferta->activa ? 'Oferta activada' : 'Oferta pausada',
+            'activa' => $oferta->activa
+        ]);
     }
 }

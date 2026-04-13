@@ -37,6 +37,8 @@ class Oferta extends Model
         'es_remunerada',
         'posibilidad_contratacion',
         'estado',
+        'vacantes',
+        'activa'
     ];
 
     /** @var array<string, string> */

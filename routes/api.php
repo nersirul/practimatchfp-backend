@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'misOfertas']);
     Route::post('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'store']);
     Route::get('/empresa/ofertas/{id_oferta}/candidatos', [\App\Http\Controllers\Api\PracticaController::class, 'candidatosPorOferta']);
+    Route::put('/empresa/ofertas/{id_oferta}/toggle', [\App\Http\Controllers\Api\OfertaController::class, 'toggleActiva']);
     Route::put('/empresa/practicas/{id_practica}/estado', [\App\Http\Controllers\Api\PracticaController::class, 'actualizarEstado']);
 
     /**
