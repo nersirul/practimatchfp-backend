@@ -19,6 +19,41 @@ use Illuminate\Support\Facades\Auth;
 class AlumnoController extends Controller
 {
     /**
+     * Dashboard general para el Alumno.
+     * 
+     * Retorna estadísticas sobre sus candidaturas y una lista
+     * de ofertas destacadas para incentivar nuevas solicitudes.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function dashboard()
+    {
+        $user = Auth::user();
+        
+        $practicas = \App\Models\Practica::where('id_alumno', $user->id_alumno)->get();
+
+        $enviadas = $practicas->count();
+        $enProceso = $practicas->where('estado', 'SOLICITADA')->count();
+        $seleccionado = $practicas->whereIn('estado', ['EN_CURSO', 'FINALIZADA'])->count();
+
+        // Extraer ofertas destacadas recientes (públicas)
+        $ofertasDestacadas = \App\Models\Oferta::with('empresa:id_empresa,nombre_comercial,ciudad')
+            ->where('estado', 'PUBLICADA')
+            ->orderBy('created_at', 'desc')
+            ->take(4)
+            ->get();
+
+        return response()->json([
+            'stats' => [
+                'enviadas' => $enviadas,
+                'en_proceso' => $enProceso,
+                'seleccionado' => $seleccionado
+            ],
+            'ofertasDestacadas' => $ofertasDestacadas
+        ]);
+    }
+
+    /**
      * Muestra el perfil del alumno autenticado.
      * 
      * Retorna el recurso del alumno logueado acompañado por medio de eager loading

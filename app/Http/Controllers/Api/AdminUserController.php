@@ -23,6 +23,58 @@ use Illuminate\Support\Facades\Auth;
 class AdminUserController extends Controller
 {
     /**
+     * Dashboard general de Administrador.
+     * 
+     * Retorna contadores agregados de todo el sistema y listados recientes para
+     * poblar de forma dinámica la vista principal del SuperAdministrador.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function dashboard()
+    {
+        $usuariosTotales = Alumno::count() + Empresa::count() + Profesor::count() + Administrador::count();
+        $empresasActivas = Empresa::where('activa', true)->count();
+        $ofertasPublicadas = \App\Models\Oferta::count();
+        $practicasEnCurso = \App\Models\Practica::where('estado', 'EN_CURSO')->count();
+
+        $validacionesPendientes = Empresa::where('activa', false)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+        
+        $practicasRecientes = \App\Models\Practica::with(['alumno', 'oferta.empresa'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        // Usuarios recientes (simplificado con alumnos por demostración)
+        $usuariosRecientes = Alumno::orderBy('created_at', 'desc')
+            ->take(5)
+            ->get()
+            ->map(function($user) {
+                // Adaptamos el formato al esperado por el frontend
+                return [
+                    'nombre_completo' => $user->nombre . ' ' . $user->apellidos,
+                    'rol' => 'Alumno',
+                    'empresa_o_ciclo' => $user->ciclo,
+                    'estado' => 'Activo'
+                ];
+            });
+
+        return response()->json([
+            'stats' => [
+                'usuariosTotales' => $usuariosTotales,
+                'empresasActivas' => $empresasActivas,
+                'ofertasPublicadas' => $ofertasPublicadas,
+                'practicasEnCurso' => $practicasEnCurso,
+            ],
+            'validacionesPendientes' => $validacionesPendientes,
+            'practicasRecientes' => $practicasRecientes,
+            'usuariosRecientes' => $usuariosRecientes
+        ]);
+    }
+
+    /**
      * Obtener listado de empresas no validadas.
      * 
      * Retorna todas las empresas registradas que todavía tienen el campo activa=false.

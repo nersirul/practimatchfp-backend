@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     /**
      * MÓDULO ROL: ADMINISTRADOR
      */
+    Route::get('/admin/dashboard', [\App\Http\Controllers\Api\AdminUserController::class, 'dashboard']);
     Route::apiResource('tecnologias', TecnologiaController::class);
     Route::get('/admin/empresas/pendientes', [\App\Http\Controllers\Api\AdminUserController::class, 'empresasPendientes']);
     Route::put('/admin/empresas/{id}/validar', [\App\Http\Controllers\Api\AdminUserController::class, 'validarEmpresa']);
@@ -51,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     /**
      * MÓDULO ROL: ALUMNO
      */
+    Route::get('/alumno/dashboard', [AlumnoController::class, 'dashboard']);
     Route::get('/alumno/perfil', [AlumnoController::class, 'show']);
     Route::put('/alumno/perfil', [AlumnoController::class, 'update']);
     Route::get('/alumno/candidaturas', [\App\Http\Controllers\Api\PracticaController::class, 'misCandidaturas']);

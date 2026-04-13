@@ -53,7 +53,7 @@ class OfertaController extends Controller
         $user = Auth::user();
         if (!$user->id_empresa) return response()->json(['error' => 'No autorizado'], 403);
 
-        $ofertas = Oferta::with('tecnologias')
+        $ofertas = Oferta::with(['tecnologias', 'empresa:id_empresa,ciudad'])
             ->withCount('practicas') 
             ->where('id_empresa', $user->id_empresa)
             ->orderBy('created_at', 'desc')
