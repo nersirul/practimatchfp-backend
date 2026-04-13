@@ -107,12 +107,16 @@ class AuthController extends Controller
             'nif' => 'required|unique:alumnos',
             'email' => 'required|email|unique:alumnos',
             'password' => 'required|min:6',
+            'nombre_centro' => 'required|string',
         ]);
+
+        $centro = \App\Models\Centro::firstOrCreate(['nombre' => $request->nombre_centro]);
 
         $alumno = Alumno::create([
             'nombre' => $request->nombre,
             'apellidos' => $request->apellidos,
             'nif' => $request->nif,
+            'id_centro' => $centro->id_centro,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'modalidad_preferida' => 'PRESENCIAL' // Asiganación por defecto
@@ -157,6 +161,7 @@ class AuthController extends Controller
 
         if ($request->tipo === 'alumno') {
             $request->validate([
+                'nombre_centro' => 'required|string',
                 'nif' => 'required|string|unique:alumnos,nif',
                 'nombre' => 'required|string|max:255',
                 'apellidos' => 'required|string|max:255',
@@ -167,7 +172,10 @@ class AuthController extends Controller
                 'ciudad' => 'nullable|string',
             ]);
 
+            $centro = \App\Models\Centro::firstOrCreate(['nombre' => $request->nombre_centro]);
+
             Alumno::create([
+                'id_centro' => $centro->id_centro,
                 'nif' => $request->nif,
                 'nombre' => $request->nombre,
                 'apellidos' => $request->apellidos,
@@ -201,6 +209,7 @@ class AuthController extends Controller
             ]);
         } elseif ($request->tipo === 'profesor') {
             $request->validate([
+                'nombre_centro' => 'required|string',
                 'nombre' => 'required|string|max:255',
                 'apellidos' => 'required|string|max:255',
                 'email' => 'required|email|unique:profesores,email',
@@ -208,7 +217,10 @@ class AuthController extends Controller
                 'telefono' => 'nullable|string',
             ]);
 
+            $centro = \App\Models\Centro::firstOrCreate(['nombre' => $request->nombre_centro]);
+
             Profesor::create([
+                'id_centro' => $centro->id_centro,
                 'nombre' => $request->nombre,
                 'apellidos' => $request->apellidos,
                 'email' => $request->email,

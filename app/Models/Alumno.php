@@ -11,9 +11,10 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Centro;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -55,6 +56,8 @@ class Alumno extends Authenticatable
         'telefono',
         'direccion',
         'ciudad',
+        'id_centro',
+        'id_profesor',
     ];
 
     /**
@@ -105,5 +108,17 @@ class Alumno extends Authenticatable
     public function practicas()
     {
         return $this->hasMany(Practica::class, 'id_alumno', 'id_alumno');
+    }
+
+    // Relación con el Centro Educativo
+    public function centro()
+    {
+        return $this->belongsTo(Centro::class, 'id_centro', 'id_centro');
+    }
+
+    // Relación con el Profesor (Tutor)
+    public function profesor()
+    {
+        return $this->belongsTo(Profesor::class, 'id_profesor', 'id_profesor');
     }
 }

@@ -31,7 +31,7 @@ class Profesor extends Authenticatable
     protected $primaryKey = 'id_profesor';
 
     /** @var array<int, string> */
-    protected $fillable = ['nombre', 'apellidos', 'email', 'password', 'telefono', 'departamento'];
+    protected $fillable = ['nombre', 'apellidos', 'email', 'password', 'telefono', 'departamento', 'id_centro'];
     
     /** @var array<int, string> */
     protected $hidden = ['password', 'remember_token'];

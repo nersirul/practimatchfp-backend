@@ -19,8 +19,8 @@ return new class extends Migration
 
             $table->date('fecha_inicio')->nullable();
             $table->date('fecha_fin')->nullable();
-            $table->enum('estado', ['SOLICITADA', 'EN_CURSO', 'FINALIZADA', 'CANCELADA'])->default('SOLICITADA');
-
+            $table->enum('estado', ['SOLICITADA', 'ESPERANDO_TUTOR', 'EN_CURSO', 'RECHAZADA', 'FINALIZADA'])->default('SOLICITADA');
+            
             $table->timestamps();
         });
     }

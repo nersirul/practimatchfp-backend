@@ -2,8 +2,7 @@
 
 /**
  * Rutas de la API de PractiMatch FP
- * 
- * Este archivo agrupa y expone todos los endpoints REST consumidos por Frontend (React).
+ * * Este archivo agrupa y expone todos los endpoints REST consumidos por Frontend (React).
  * Todo este grupo aplica automáticamente el Middleware 'api'.
  * Las rutas protegidas validan el Bearer Token a través de 'auth:sanctum'.
  */
@@ -19,9 +18,13 @@ use App\Http\Controllers\Api\AlumnoController;
 | RUTAS PÚBLICAS (No requieren token)
 |--------------------------------------------------------------------------
 */
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/registro', [\App\Http\Controllers\Api\AuthController::class, 'registro']);
 Route::post('/register/alumno', [AuthController::class, 'registerAlumno']);
+Route::get('/centros', function () {
+    return response()->json(\App\Models\Centro::orderBy('nombre')->get());
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -29,7 +32,7 @@ Route::post('/register/alumno', [AuthController::class, 'registerAlumno']);
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     // Endpoint general para obtener el usuario activo de la sesión
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -56,15 +59,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/alumno/perfil', [AlumnoController::class, 'show']);
     Route::put('/alumno/perfil', [AlumnoController::class, 'update']);
     Route::get('/alumno/candidaturas', [\App\Http\Controllers\Api\PracticaController::class, 'misCandidaturas']);
+    Route::get('/alumno/info-academica', [\App\Http\Controllers\Api\AlumnoController::class, 'infoAcademica']);
 
     /**
      * MÓDULO CORE: OFERTAS Y CANDIDATURAS (MATCH)
      */
-    
+
     // Búsqueda y Detalle público para Alumnos
     Route::get('/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'index']);
     Route::get('/ofertas/{id}', [\App\Http\Controllers\Api\OfertaController::class, 'show']);
-    
+
     // Aplicar a vacante (El Alumno hace 'Click en Solicitar Práctica')
     Route::post('/ofertas/{id_oferta}/solicitar', [\App\Http\Controllers\Api\PracticaController::class, 'solicitar']);
 
@@ -87,8 +91,12 @@ Route::middleware('auth:sanctum')->group(function () {
     /**
      * MÓDULO ROL: PROFESOR (SUPERVISOR)
      */
-    Route::get('/profesor/practicas', [\App\Http\Controllers\Api\ProfesorController::class, 'practicasSupervisadas']);
+    Route::get('/profesor/practicas', [\App\Http\Controllers\Api\ProfesorController::class, 'practicas']);
     Route::post('/profesor/practicas/{id_practica}/evaluar', [\App\Http\Controllers\Api\ProfesorController::class, 'evaluar']);
+    Route::get('/profesor/alumnos/huérfanos', [\App\Http\Controllers\Api\ProfesorController::class, 'alumnosSinTutor']);
+    Route::get('/profesor/mis-alumnos', [\App\Http\Controllers\Api\ProfesorController::class, 'misAlumnos']);
+    Route::post('/profesor/alumnos/{id_alumno}/tutoria', [\App\Http\Controllers\Api\ProfesorController::class, 'gestionarTutoria']);
+    Route::post('/profesor/practicas/{id_practica}/aprobar', [\App\Http\Controllers\Api\ProfesorController::class, 'aprobarInicioPractica']);
 
     /**
      * EXPORTACIÓN DE DOCUMENTOS (Generador DOMPDF)

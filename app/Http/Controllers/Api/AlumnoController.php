@@ -16,6 +16,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+
 class AlumnoController extends Controller
 {
     /**
@@ -106,5 +107,17 @@ class AlumnoController extends Controller
         }
 
         return response()->json(['message' => 'Perfil actualizado', 'user' => $user->load('tecnologias')]);
+    }
+
+    // Obtener datos del centro y tutor en tiempo real
+    public function infoAcademica()
+    {
+        // Cogemos al alumno logueado y cargamos mágicamente sus relaciones
+        $alumno = Auth::user()->load(['centro', 'profesor']);
+
+        return response()->json([
+            'centro' => $alumno->centro,
+            'profesor' => $alumno->profesor
+        ]);
     }
 }

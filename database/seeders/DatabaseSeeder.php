@@ -2,14 +2,11 @@
 
 /**
  * Seeder de Base de Datos - DatabaseSeeder
- * 
- * Clase central para poblar la base de datos con información inicial ("dummy data").
+ * * Clase central para poblar la base de datos con información inicial ("dummy data").
  * Genera perfiles de usuario, categorías, tecnologías base y establece el marco
  * de una oferta y práctica de prueba para propósitos de demostración y testing.
- * 
- * Se invoca mediante: php artisan db:seed
- * 
- * @package Database\Seeders
+ * * Se invoca mediante: php artisan db:seed
+ * * @package Database\Seeders
  */
 
 namespace Database\Seeders;
@@ -23,13 +20,13 @@ use App\Models\Categoria;
 use App\Models\Tecnologia;
 use App\Models\Oferta;
 use App\Models\Profesor;
+use App\Models\Centro; // <-- AÑADIDO: Importamos el nuevo modelo Centro
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Ejecuta las semillas en la base de datos.
-     * 
-     * El orden de inserción es crítico para no infligir restricciones de llaves foráneas.
+     * * El orden de inserción es crítico para no infligir restricciones de llaves foráneas.
      *
      * @return void
      */
@@ -39,7 +36,7 @@ class DatabaseSeeder extends Seeder
         Administrador::create([
             'nombre' => 'Super Admin',
             'email' => 'admin@practimatch.com',
-            'password' => Hash::make('password'), 
+            'password' => Hash::make('password'),
         ]);
 
         // 2. Crear Diccionario Básico de Categorías y Tecnologías
@@ -69,8 +66,25 @@ class DatabaseSeeder extends Seeder
         // Forzamos que la empresa esté activa simulando que el admin la validó
         $empresa1->update(['activa' => true]);
 
-        // 4. Crear Perfil de Alumno
+        $centro = Centro::create([
+            'nombre' => 'IES Francisco de los Cobos'
+        ]);
+
+        // 4. Crear un Tutor / Supervisor asignado al centro
+        Profesor::create([
+            'id_centro' => $centro->id_centro, // <-- VINCULACIÓN AL CENTRO
+            'nombre' => 'Marta',
+            'apellidos' => 'Tutor',
+            'email' => 'marta@instituto.com',
+            'password' => Hash::make('password'),
+            'telefono' => '600111222',
+            'departamento' => 'Informática'
+        ]);
+
+        // 5. Crear Perfil de Alumno asignado al centro (y sin tutor asignado)
         $alumno1 = Alumno::create([
+            'id_centro' => $centro->id_centro, // <-- VINCULACIÓN AL CENTRO
+            'id_profesor' => null, // Lo dejamos huérfano para que Marta lo reclame
             'nombre' => 'Juan',
             'apellidos' => 'Pérez',
             'nif' => '12345678A',
@@ -86,10 +100,10 @@ class DatabaseSeeder extends Seeder
         // Inyectar conocimientos en el perfil de "Juan"
         $alumno1->tecnologias()->attach($php->id_tecnologia, ['tipo_relacion' => 'CONOCE', 'nivel' => 8]);
 
-        // 5. Instanciar una Oferta Pública para el buscador
+        // 6. Instanciar una Oferta Pública para el buscador
         $oferta = Oferta::create([
             'id_empresa' => $empresa1->id_empresa,
-            'id_admin_validador' => 1, 
+            'id_admin_validador' => 1,
             'titulo' => 'Desarrollador Junior Laravel',
             'descripcion' => 'Buscamos gente con ganas.',
             'modalidad' => 'REMOTO',
@@ -98,15 +112,5 @@ class DatabaseSeeder extends Seeder
 
         // Declarar requisitos para esta oferta
         $oferta->tecnologias()->attach($php->id_tecnologia);
-
-        // 6. Crear un Tutor / Supervisor
-        Profesor::create([
-            'nombre' => 'Marta',
-            'apellidos' => 'Tutor',
-            'email' => 'marta@instituto.com',
-            'password' => Hash::make('password'),
-            'telefono' => '600111222',
-            'departamento' => 'Informática'
-        ]);
     }
 }

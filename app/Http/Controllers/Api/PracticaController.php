@@ -113,7 +113,7 @@ class PracticaController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'estado' => 'required|in:EN_CURSO,RECHAZADA,FINALIZADA'
+            'estado' => 'required|in:ESPERANDO_TUTOR,RECHAZADA'
         ]);
 
         $practica = Practica::with('oferta')->findOrFail($id_practica);
