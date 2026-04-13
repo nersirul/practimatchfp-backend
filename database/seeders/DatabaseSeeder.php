@@ -2,9 +2,8 @@
 
 /**
  * Seeder de Base de Datos - DatabaseSeeder
- * * Clase central para poblar la base de datos con información inicial ("dummy data").
- * Genera perfiles de usuario, categorías, tecnologías base y establece el marco
- * de una oferta y práctica de prueba para propósitos de demostración y testing.
+ * * Clase central para poblar la base de datos con información masiva ("dummy data") para pruebas y demostraciones.
+ * Genera entidades clave: alumnos, empresas, profesores, centros, tecnologías y ofertas.
  * * Se invoca mediante: php artisan db:seed
  * * @package Database\Seeders
  */
@@ -20,7 +19,8 @@ use App\Models\Categoria;
 use App\Models\Tecnologia;
 use App\Models\Oferta;
 use App\Models\Profesor;
-use App\Models\Centro; // <-- AÑADIDO: Importamos el nuevo modelo Centro
+use App\Models\Centro;
+use Faker\Factory as Faker;
 
 class DatabaseSeeder extends Seeder
 {
@@ -32,85 +32,150 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Instanciar Faker en español para generar datos realistas
+        $faker = Faker::create('es_ES');
+        $password = Hash::make('password'); // Misma contraseña para todos según requerimientos
+
         // 1. Crear usuario Administrador (Super Admin)
         Administrador::create([
             'nombre' => 'Super Admin',
             'email' => 'admin@practimatch.com',
-            'password' => Hash::make('password'),
+            'password' => $password,
         ]);
 
-        // 2. Crear Diccionario Básico de Categorías y Tecnologías
-        $catWeb = Categoria::create(['nombre' => 'Desarrollo Web']);
-        $catSys = Categoria::create(['nombre' => 'Sistemas']);
+        // 2. Crear Diccionario Amplio de Categorías y Tecnologías
+        $categoriasData = [
+            'Desarrollo de Software' => ['PHP', 'JavaScript', 'Python', 'Java', 'C#', 'C++', 'Ruby', 'Swift', 'Kotlin', 'Go', 'React', 'Angular', 'Vue.js', 'Node.js', 'Laravel', 'Spring Boot', '.NET'],
+            'Sistemas y Redes' => ['Linux', 'Windows Server', 'Cisco', 'Active Directory', 'Proxmox', 'VMware', 'Bash', 'PowerShell', 'Nginx', 'Apache'],
+            'Cloud Computing' => ['AWS', 'Google Cloud', 'Microsoft Azure', 'Docker', 'Kubernetes', 'Terraform', 'Ansible'],
+            'Ciberseguridad' => ['Kali Linux', 'Wireshark', 'Metasploit', 'Nmap', 'Burp Suite', 'Snort', 'Security+'],
+            'Big Data & IA' => ['Hadoop', 'Spark', 'TensorFlow', 'PyTorch', 'PowerBI', 'Tableau', 'Pandas', 'MongoDB', 'Redis', 'Elasticsearch']
+        ];
+        
+        $todasTecnologias = []; // Guardamos referencia para asignar aleatoriamente después
 
-        $php = Tecnologia::create(['nombre' => 'PHP']);
-        $js = Tecnologia::create(['nombre' => 'JavaScript']);
-        $linux = Tecnologia::create(['nombre' => 'Linux']);
+        foreach ($categoriasData as $catName => $techs) {
+            $categoria = Categoria::create(['nombre' => $catName]);
+            foreach ($techs as $techName) {
+                $tech = Tecnologia::create(['nombre' => $techName]);
+                $todasTecnologias[] = $tech;
+                // Vincular tecnología a categoría
+                $categoria->tecnologias()->attach($tech->id_tecnologia);
+            }
+        }
 
-        // Vinculaciones pivot: Unir tecnologías a sus respectivas categorías
-        $catWeb->tecnologias()->attach([$php->id_tecnologia, $js->id_tecnologia]);
-        $catSys->tecnologias()->attach($linux->id_tecnologia);
+        // 3. Crear 20-25 Centros (Institutos)
+        $centros = [];
+        $numCentros = $faker->numberBetween(20, 25);
+        for ($i = 0; $i < $numCentros; $i++) {
+            $centros[] = Centro::create([
+                'nombre' => 'IES ' . $faker->unique()->company
+            ]);
+        }
 
-        // 3. Crear Perfil Empresa pre-activado
-        $empresa1 = Empresa::create([
-            'nombre_comercial' => 'Tech Solutions',
-            'cif' => 'B12345678',
-            'email_contacto' => 'rrhh@tech.com',
-            'password' => Hash::make('password'),
-            'sector' => 'Consultoría',
-            'descripcion' => 'Empresa líder en desarrollo web.',
-            'telefono_contacto' => '911222333',
-            'direccion' => 'Av. Tecnológica 5',
-            'ciudad' => 'Madrid',
-        ]);
-        // Forzamos que la empresa esté activa simulando que el admin la validó
-        $empresa1->update(['activa' => true]);
+        // 4. Crear 30 Profesores (Tutores de centro)
+        $profesores = [];
+        for ($i = 0; $i < 30; $i++) {
+            $centroAleatorio = $faker->randomElement($centros);
+            $profesores[] = Profesor::create([
+                'id_centro' => $centroAleatorio->id_centro,
+                'nombre' => $faker->firstName,
+                'apellidos' => $faker->lastName . ' ' . $faker->lastName,
+                'email' => $faker->unique()->safeEmail,
+                'password' => $password,
+                'telefono' => $faker->numerify('#########'),
+                'departamento' => $faker->randomElement(['Informática', 'Comunicaciones', 'Sistemas y Redes', 'Desarrollo Web'])
+            ]);
+        }
 
-        $centro = Centro::create([
-            'nombre' => 'IES Francisco de los Cobos'
-        ]);
+        // Agrupar profesores por centro para facilitar la asignación a alumnos
+        $profesoresPorCentro = [];
+        foreach ($profesores as $prof) {
+            $profesoresPorCentro[$prof->id_centro][] = $prof;
+        }
 
-        // 4. Crear un Tutor / Supervisor asignado al centro
-        Profesor::create([
-            'id_centro' => $centro->id_centro, // <-- VINCULACIÓN AL CENTRO
-            'nombre' => 'Marta',
-            'apellidos' => 'Tutor',
-            'email' => 'marta@instituto.com',
-            'password' => Hash::make('password'),
-            'telefono' => '600111222',
-            'departamento' => 'Informática'
-        ]);
+        // 5. Crear 150 Alumnos
+        $numAlumnos = 150;
+        for ($i = 0; $i < $numAlumnos; $i++) {
+            $centroAleatorio = $faker->randomElement($centros);
+            
+            // Buscar si hay profesores en este centro
+            $profesorId = null;
+            if (isset($profesoresPorCentro[$centroAleatorio->id_centro])) {
+                $profesorAleatorio = $faker->randomElement($profesoresPorCentro[$centroAleatorio->id_centro]);
+                // Con un 80% de probabilidad asignamos profesor, sino queda huérfano
+                $profesorId = $faker->boolean(80) ? $profesorAleatorio->id_profesor : null;
+            }
 
-        // 5. Crear Perfil de Alumno asignado al centro (y sin tutor asignado)
-        $alumno1 = Alumno::create([
-            'id_centro' => $centro->id_centro, // <-- VINCULACIÓN AL CENTRO
-            'id_profesor' => null, // Lo dejamos huérfano para que Marta lo reclame
-            'nombre' => 'Juan',
-            'apellidos' => 'Pérez',
-            'nif' => '12345678A',
-            'email' => 'juan@alumno.com',
-            'password' => Hash::make('password'),
-            'ciclo' => 'DAW',
-            'modalidad_preferida' => 'HIBRIDO',
-            'telefono' => '655444333',
-            'direccion' => 'Calle Principal 1',
-            'ciudad' => 'Madrid',
-        ]);
+            // Generar DNI o NIE realista
+            $nif = $faker->unique()->numerify('########') . $faker->randomElement(['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Y','Z']);
 
-        // Inyectar conocimientos en el perfil de "Juan"
-        $alumno1->tecnologias()->attach($php->id_tecnologia, ['tipo_relacion' => 'CONOCE', 'nivel' => 8]);
+            $alumno = Alumno::create([
+                'id_centro' => $centroAleatorio->id_centro,
+                'id_profesor' => $profesorId, 
+                'nombre' => $faker->firstName,
+                'apellidos' => $faker->lastName . ' ' . $faker->lastName,
+                'nif' => $nif,
+                'email' => $faker->unique()->safeEmail,
+                'password' => $password,
+                'ciclo' => $faker->randomElement(['DAW', 'DAM', 'ASIR', 'SMR']),
+                'modalidad_preferida' => $faker->randomElement(['PRESENCIAL', 'REMOTO', 'HIBRIDO']),
+                'telefono' => $faker->numerify('#########'),
+                'direccion' => $faker->streetAddress,
+                'ciudad' => $faker->city,
+            ]);
 
-        // 6. Instanciar una Oferta Pública para el buscador
-        $oferta = Oferta::create([
-            'id_empresa' => $empresa1->id_empresa,
-            'id_admin_validador' => 1,
-            'titulo' => 'Desarrollador Junior Laravel',
-            'descripcion' => 'Buscamos gente con ganas.',
-            'modalidad' => 'REMOTO',
-            'estado' => 'PUBLICADA'
-        ]);
+            // Inyectar conocimientos aleatorios (entre 2 y 6 tecnologías por alumno)
+            $techsSeleccionadas = $faker->randomElements($todasTecnologias, $faker->numberBetween(2, 6));
+            foreach ($techsSeleccionadas as $tech) {
+                $alumno->tecnologias()->attach($tech->id_tecnologia, [
+                    'tipo_relacion' => $faker->randomElement(['CONOCE', 'INTERES']),
+                    'nivel' => $faker->numberBetween(1, 10)
+                ]);
+            }
+        }
 
-        // Declarar requisitos para esta oferta
-        $oferta->tecnologias()->attach($php->id_tecnologia);
+        // 6. Crear 50 Empresas
+        for ($i = 0; $i < 50; $i++) {
+            $cif = 'B' . $faker->unique()->numerify('########');
+            
+            $empresa = Empresa::create([
+                'nombre_comercial' => $faker->unique()->company,
+                'cif' => $cif,
+                'email_contacto' => $faker->unique()->companyEmail,
+                'password' => $password,
+                'sector' => $faker->randomElement(['Consultoría Tecnológica', 'Desarrollo de Software', 'Ciberseguridad', 'Innovación IT', 'Banca y Fintech', 'Educación IT', 'Agencia Digital']),
+                'descripcion' => $faker->paragraph(3),
+                'telefono_contacto' => $faker->numerify('#########'),
+                'direccion' => $faker->streetAddress,
+                'ciudad' => $faker->city,
+                'activa' => $faker->boolean(95), // 95% están activas/validadas por admin
+            ]);
+
+            // Crear entre 1 y 10 Ofertas por empresa
+            $numOfertas = $faker->numberBetween(1, 10);
+            for ($o = 0; $o < $numOfertas; $o++) {
+                // Generar ofertas mayoritariamente publicadas
+                $estadoOferta = $faker->randomElement(['PUBLICADA', 'PUBLICADA', 'PUBLICADA', 'PENDIENTE', 'CERRADA']);
+
+                $oferta = Oferta::create([
+                    'id_empresa' => $empresa->id_empresa,
+                    'id_admin_validador' => 1, // Admin 1
+                    'titulo' => $faker->randomElement(['Desarrollador Junior ', 'Técnico de Sistemas ', 'Prácticas en Ciberseguridad ', 'Beca Consultoría ', 'Analista Junior de Datos ']) . $faker->randomElement(['', '(Remoto)', '- Urgente']),
+                    'descripcion' => $faker->paragraph(4),
+                    'modalidad' => $faker->randomElement(['REMOTO', 'PRESENCIAL', 'HIBRIDO']),
+                    'es_remunerada' => $faker->boolean(40), // 40% son remuneradas
+                    'posibilidad_contratacion' => $faker->boolean(75), // 75% tienen posibilidad real de contratación
+                    'estado' => $estadoOferta,
+                    'vacantes' => $faker->numberBetween(1, 5),
+                    'activa' => true // la oferta por defecto activa
+                ]);
+
+                // Asignar requisitos (tecnologías) para la oferta
+                $techsOferta = $faker->randomElements($todasTecnologias, $faker->numberBetween(1, 4));
+                $idsParaAttach = array_map(fn($t) => $t->id_tecnologia, $techsOferta);
+                $oferta->tecnologias()->attach($idsParaAttach);
+            }
+        }
     }
 }
