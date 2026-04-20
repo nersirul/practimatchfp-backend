@@ -42,7 +42,7 @@ class EmpresaController extends Controller
      */
     public function update(Request $request)
     {
-        $user = Auth::user();
+        $empresa = \App\Models\Empresa::findOrFail(Auth::user()->id_empresa);
         
         $request->validate([
             'nombre_comercial' => 'required',
@@ -52,7 +52,7 @@ class EmpresaController extends Controller
             'ciudad' => 'required',
         ]);
 
-        $user->update($request->only([
+        $empresa->update($request->only([
             'nombre_comercial', 
             'cif', 
             'telefono_contacto', 
@@ -61,6 +61,6 @@ class EmpresaController extends Controller
             'descripcion'
         ]));
         
-        return response()->json(['message' => 'Perfil actualizado', 'user' => $user]);
+        return response()->json(['message' => 'Perfil actualizado', 'user' => $empresa]);
     }
 }

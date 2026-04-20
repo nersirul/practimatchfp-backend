@@ -2,11 +2,9 @@
 
 /**
  * Controlador de API - AdminUserController
- * 
- * Gestiona el panel de control del SuperAdministrador.
+ * * Gestiona el panel de control del SuperAdministrador.
  * Proporciona métodos para verificar, validar y borrar usuarios (SoftDelete) del sistema.
- * 
- * @package App\Http\Controllers\Api
+ * * @package App\Http\Controllers\Api
  */
 
 namespace App\Http\Controllers\Api;
@@ -24,11 +22,9 @@ class AdminUserController extends Controller
 {
     /**
      * Dashboard general de Administrador.
-     * 
-     * Retorna contadores agregados de todo el sistema y listados recientes para
+     * * Retorna contadores agregados de todo el sistema y listados recientes para
      * poblar de forma dinámica la vista principal del SuperAdministrador.
-     * 
-     * @return \Illuminate\Http\JsonResponse
+     * * @return \Illuminate\Http\JsonResponse
      */
     public function dashboard()
     {
@@ -41,7 +37,7 @@ class AdminUserController extends Controller
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-        
+
         $practicasRecientes = \App\Models\Practica::with(['alumno', 'oferta.empresa'])
             ->orderBy('created_at', 'desc')
             ->take(5)
@@ -51,7 +47,7 @@ class AdminUserController extends Controller
         $usuariosRecientes = Alumno::orderBy('created_at', 'desc')
             ->take(5)
             ->get()
-            ->map(function($user) {
+            ->map(function ($user) {
                 // Adaptamos el formato al esperado por el frontend
                 return [
                     'nombre_completo' => $user->nombre . ' ' . $user->apellidos,
@@ -60,6 +56,12 @@ class AdminUserController extends Controller
                     'estado' => 'Activo'
                 ];
             });
+
+        // NUEVO: Extraemos las últimas ofertas creadas en el sistema para el panel de control
+        $ofertasRecientes = \App\Models\Oferta::with('empresa')
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
 
         return response()->json([
             'stats' => [
@@ -70,16 +72,15 @@ class AdminUserController extends Controller
             ],
             'validacionesPendientes' => $validacionesPendientes,
             'practicasRecientes' => $practicasRecientes,
-            'usuariosRecientes' => $usuariosRecientes
+            'usuariosRecientes' => $usuariosRecientes,
+            'ofertasRecientes' => $ofertasRecientes // <-- Enviamos las ofertas al frontend
         ]);
     }
 
     /**
      * Obtener listado de empresas no validadas.
-     * 
-     * Retorna todas las empresas registradas que todavía tienen el campo activa=false.
-     * 
-     * @return \Illuminate\Http\JsonResponse JSON con el array de empresas.
+     * * Retorna todas las empresas registradas que todavía tienen el campo activa=false.
+     * * @return \Illuminate\Http\JsonResponse JSON con el array de empresas.
      */
     public function empresasPendientes()
     {
@@ -89,11 +90,9 @@ class AdminUserController extends Controller
 
     /**
      * Validar Empresa.
-     * 
-     * Activa una empresa cambiándole el estado en la base de datos a true.
+     * * Activa una empresa cambiándole el estado en la base de datos a true.
      * Esto le permitirá loguearse y que sus ofertas empiecen a indexarse.
-     * 
-     * @param int $id ID de la empresa a validar.
+     * * @param int $id ID de la empresa a validar.
      * @return \Illuminate\Http\JsonResponse
      */
     public function validarEmpresa($id)
@@ -105,8 +104,7 @@ class AdminUserController extends Controller
 
     /**
      * Listado dinámico de usuarios según su rol.
-     * 
-     * @param string $tipo Tipo de usuario ('alumnos', 'empresas', 'profesores', 'administradores').
+     * * @param string $tipo Tipo de usuario ('alumnos', 'empresas', 'profesores', 'administradores').
      * @return \Illuminate\Http\JsonResponse JSON con la colección de usuarios correspondientes.
      */
     public function index($tipo)
@@ -130,8 +128,7 @@ class AdminUserController extends Controller
      *
      * Permite al administrador editar la información desde el panel de control.
      * Encripta automáticamente la nueva contraseña si se provee.
-     * 
-     * @param \Illuminate\Http\Request $request
+     * * @param \Illuminate\Http\Request $request
      * @param string $tipo El perfil o rol del usuario
      * @param int $id ID del usuario a modificar
      * @return \Illuminate\Http\JsonResponse
@@ -142,7 +139,7 @@ class AdminUserController extends Controller
         if (!$modelo) return response()->json(['error' => 'Usuario no encontrado'], 404);
 
         // Cogemos todos los campos modificados salvo la contraseña para tratarla aparte.
-        $datos = $request->except(['password']); 
+        $datos = $request->except(['password']);
 
         // Si el payload contiene una contraseña, la preparamos hasheándola.
         if ($request->filled('password')) {
@@ -155,12 +152,10 @@ class AdminUserController extends Controller
 
     /**
      * Borrado lógico de un usuario (Soft Delete).
-     * 
-     * Permuta el registro a estado "eliminado" sin borrar de la base de datos realmente,
+     * * Permuta el registro a estado "eliminado" sin borrar de la base de datos realmente,
      * útil para no romper referencias de FK en prácticas ya asociadas.
      * Previene que un administrador se de de baja a sí mismo y quede el sistema huérfano.
-     * 
-     * @param string $tipo El rol especificado del usuario.
+     * * @param string $tipo El rol especificado del usuario.
      * @param int $id ID del usuario atado al rol.
      * @return \Illuminate\Http\JsonResponse
      */
@@ -175,17 +170,15 @@ class AdminUserController extends Controller
         if (!$modelo) return response()->json(['error' => 'Usuario no encontrado'], 404);
 
         // Ejecuta SoftDelete según Trait del modelo.
-        $modelo->delete(); 
-        
+        $modelo->delete();
+
         return response()->json(['message' => 'Usuario dado de baja correctamente']);
     }
 
     /**
      * Factory Method (Función auxiliar).
-     * 
-     * Devuelve una instancia concreta del modelo Eloquent según el string provisto, o nulo.
-     * 
-     * @param string $tipo Selector de tipo de usuario.
+     * * Devuelve una instancia concreta del modelo Eloquent según el string provisto, o nulo.
+     * * @param string $tipo Selector de tipo de usuario.
      * @param int $id Identificador primario.
      * @return \Illuminate\Database\Eloquent\Model|null
      */

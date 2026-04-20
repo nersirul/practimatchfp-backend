@@ -9,6 +9,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TecnologiaController;
 use App\Http\Controllers\Api\AlumnoController;
@@ -68,9 +69,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Búsqueda y Detalle público para Alumnos
     Route::get('/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'index']);
     Route::get('/ofertas/{id}', [\App\Http\Controllers\Api\OfertaController::class, 'show']);
-
     // Aplicar a vacante (El Alumno hace 'Click en Solicitar Práctica')
     Route::post('/ofertas/{id_oferta}/solicitar', [\App\Http\Controllers\Api\PracticaController::class, 'solicitar']);
+    // RUTA COMPARTIDA (Para que la Empresa edite sus ofertas o el Admin edite cualquiera)
+    Route::put('/ofertas/{id}/editar', [\App\Http\Controllers\Api\OfertaController::class, 'update']);
 
     /**
      * MÓDULO ROL: EMPRESA
@@ -81,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/empresa/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'store']);
     Route::get('/empresa/ofertas/{id_oferta}/candidatos', [\App\Http\Controllers\Api\PracticaController::class, 'candidatosPorOferta']);
     Route::put('/empresa/ofertas/{id_oferta}/toggle', [\App\Http\Controllers\Api\OfertaController::class, 'toggleActiva']);
+    Route::put('/empresa/ofertas/{id_oferta}/cerrar', [\App\Http\Controllers\Api\OfertaController::class, 'cerrar']);
     Route::put('/empresa/practicas/{id_practica}/estado', [\App\Http\Controllers\Api\PracticaController::class, 'actualizarEstado']);
 
     /**
@@ -98,6 +101,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profesor/mis-alumnos', [\App\Http\Controllers\Api\ProfesorController::class, 'misAlumnos']);
     Route::post('/profesor/alumnos/{id_alumno}/tutoria', [\App\Http\Controllers\Api\ProfesorController::class, 'gestionarTutoria']);
     Route::post('/profesor/practicas/{id_practica}/aprobar', [\App\Http\Controllers\Api\ProfesorController::class, 'aprobarInicioPractica']);
+    Route::get('/profesor/perfil', function () {
+        $profesor = \App\Models\Profesor::findOrFail(Auth::user()->id_profesor);
+        return response()->json($profesor);
+    });
+    Route::put('/profesor/perfil', [\App\Http\Controllers\Api\ProfesorController::class, 'updatePerfil']);
 
     /**
      * EXPORTACIÓN DE DOCUMENTOS (Generador DOMPDF)

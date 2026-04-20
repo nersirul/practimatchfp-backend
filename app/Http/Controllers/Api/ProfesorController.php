@@ -145,4 +145,20 @@ class ProfesorController extends Controller
         $practica->update(['estado' => 'EN_CURSO', 'id_profesor' => $profesor->id_profesor]);
         return response()->json(['message' => 'Práctica iniciada oficialmente.']);
     }
+
+    public function updatePerfil(Request $request)
+    {
+        $profesor = \App\Models\Profesor::findOrFail(Auth::user()->id_profesor);
+
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
+            'telefono' => 'nullable|string|max:20',
+            'departamento' => 'required|string'
+        ]);
+
+        $profesor->update($request->only(['nombre', 'apellidos', 'telefono', 'departamento']));
+
+        return response()->json(['message' => 'Perfil actualizado correctamente.']);
+    }
 }

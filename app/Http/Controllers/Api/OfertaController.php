@@ -161,12 +161,24 @@ class OfertaController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show($id)
+    public function show($id_oferta)
     {
-        $oferta = Oferta::with(['empresa:id_empresa,nombre_comercial,ciudad,descripcion', 'tecnologias'])
-            ->where('estado', 'PUBLICADA')
-            ->findOrFail($id);
-            
+        $oferta = Oferta::with(['empresa', 'tecnologias'])->findOrFail($id_oferta);
+        $user = Auth::user();
+
+        // REGLAS DE VISIBILIDAD DE LA OFERTA (CORREGIDO PHP):
+        $esAdmin = isset($user->id_admin);
+        $esEmpresaDueña = isset($user->id_empresa) && $user->id_empresa === $oferta->id_empresa;
+
+        // Si NO es el Admin y NO es la empresa que la creó, aplicamos el muro de seguridad:
+        if (!$esAdmin && !$esEmpresaDueña) {
+            // Los alumnos y profesores solo pueden ver ofertas que estén PUBLICADAS y ACTIVAS
+            if ($oferta->estado !== 'PUBLICADA' || !$oferta->activa) {
+                return response()->json(['error' => 'Esta oferta no está disponible actualmente.'], 403);
+            }
+        }
+
+        // Si pasa los filtros (o es Admin/Dueño), le devolvemos los datos
         return response()->json($oferta);
     }
 
@@ -181,5 +193,58 @@ class OfertaController extends Controller
             'message' => $oferta->activa ? 'Oferta activada' : 'Oferta pausada',
             'activa' => $oferta->activa
         ]);
+    }
+
+    public function update(Request $request, $id_oferta)
+    {
+        $oferta = Oferta::findOrFail($id_oferta);
+        $user = Auth::user();
+
+        // SEGURIDAD: Si es empresa, verificamos que la oferta le pertenezca. 
+        // (Si el user tiene id_admin, se saltará este if y podrá editarla).
+        if (isset($user->id_empresa) && $oferta->id_empresa !== $user->id_empresa) {
+            return response()->json(['error' => 'No tienes permiso para editar esta oferta.'], 403);
+        }
+
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'required|string',
+            'modalidad' => 'required|in:PRESENCIAL,REMOTO,HIBRIDO',
+            'vacantes' => 'nullable|integer|min:1',
+            'tecnologias' => 'array'
+        ]);
+
+        $oferta->update($request->only([
+            'titulo',
+            'descripcion',
+            'modalidad',
+            'vacantes',
+            'es_remunerada',
+            'posibilidad_contratacion'
+        ]));
+
+        // Actualizar tecnologías usando sync() para que borre las viejas y ponga las nuevas
+        if ($request->has('tecnologias')) {
+            $oferta->tecnologias()->sync($request->tecnologias);
+        }
+
+        return response()->json(['message' => 'Oferta actualizada con éxito.', 'oferta' => $oferta]);
+    }
+
+    /**
+     * Cerrar una oferta definitivamente.
+     * Una vez cerrada, no se puede volver a abrir ni editar.
+     */
+    public function cerrar($id_oferta)
+    {
+        $empresa = Auth::user();
+        $oferta = Oferta::where('id_empresa', $empresa->id_empresa)->findOrFail($id_oferta);
+
+        $oferta->update([
+            'estado' => 'CERRADA',
+            'activa' => false // La ocultamos del buscador automáticamente
+        ]);
+
+        return response()->json(['message' => 'Oferta cerrada definitivamente.']);
     }
 }
