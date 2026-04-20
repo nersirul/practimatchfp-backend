@@ -64,7 +64,8 @@ class AlumnoController extends Controller
      */
     public function show()
     {
-        return response()->json(Auth::user()->load('tecnologias'));
+        $alumno = \App\Models\Alumno::with('tecnologias')->findOrFail(Auth::user()->id_alumno);
+        return response()->json($alumno);
     }
 
     /**
@@ -79,7 +80,7 @@ class AlumnoController extends Controller
      */
     public function update(Request $request)
     {
-        $user = Auth::user();
+        $user = \App\Models\Alumno::findOrFail(Auth::user()->id_alumno);
 
         // 1. Validar los datos básicos provenientes del formulario de React (PerfilAlumno.jsx)
         $request->validate([
@@ -113,7 +114,7 @@ class AlumnoController extends Controller
     public function infoAcademica()
     {
         // Cogemos al alumno logueado y cargamos mágicamente sus relaciones
-        $alumno = Auth::user()->load(['centro', 'profesor']);
+        $alumno = \App\Models\Alumno::with(['centro', 'profesor'])->findOrFail(Auth::user()->id_alumno);
 
         return response()->json([
             'centro' => $alumno->centro,

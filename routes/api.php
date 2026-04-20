@@ -27,6 +27,9 @@ Route::get('/centros', function () {
     return response()->json(\App\Models\Centro::orderBy('nombre')->get());
 });
 
+// NUEVO: Catálogo público de ofertas (Solo el listado, sin detalles)
+Route::get('/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'index']);
+
 /*
 |--------------------------------------------------------------------------
 | RUTAS PROTEGIDAS (Requieren Bearer Token)
@@ -66,8 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
      * MÓDULO CORE: OFERTAS Y CANDIDATURAS (MATCH)
      */
 
-    // Búsqueda y Detalle público para Alumnos
-    Route::get('/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'index']);
+    // El DETALLE de la oferta sigue protegido para Alumnos y resto de roles logueados
     Route::get('/ofertas/{id}', [\App\Http\Controllers\Api\OfertaController::class, 'show']);
     // Aplicar a vacante (El Alumno hace 'Click en Solicitar Práctica')
     Route::post('/ofertas/{id_oferta}/solicitar', [\App\Http\Controllers\Api\PracticaController::class, 'solicitar']);
