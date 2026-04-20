@@ -27,7 +27,7 @@ Route::get('/centros', function () {
     return response()->json(\App\Models\Centro::orderBy('nombre')->get());
 });
 
-// NUEVO: Catálogo público de ofertas (Solo el listado, sin detalles)
+// Exposición del inventario público de descripciones de oferta
 Route::get('/ofertas', [\App\Http\Controllers\Api\OfertaController::class, 'index']);
 
 /*

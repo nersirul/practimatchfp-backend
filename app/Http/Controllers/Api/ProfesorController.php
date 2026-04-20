@@ -31,10 +31,10 @@ class ProfesorController extends Controller
     {
         $profesor = Auth::user();
 
-        // 1. Buscamos los IDs de TODOS los alumnos que te pertenecen
+        // Localización de IDs subyugados al tutor
         $misAlumnosIds = Alumno::where('id_profesor', $profesor->id_profesor)->pluck('id_alumno');
 
-        // 2. Buscamos las prácticas de esos alumnos y cargamos las relaciones para React
+        // Hidratación de las prácticas correspondientes a la cohorte de alumnos
         $practicas = Practica::with(['alumno', 'oferta.empresa', 'valoracion'])
             ->whereIn('id_alumno', $misAlumnosIds)
             ->whereIn('estado', ['ESPERANDO_TUTOR', 'EN_CURSO', 'FINALIZADA']) // Incluimos el nuevo estado
@@ -63,7 +63,7 @@ class ProfesorController extends Controller
 
         $practica = Practica::findOrFail($id_practica);
 
-        // Crear la valoración cualitativa en base de datos.
+        // Persistencia de la valoración cualitativa y cuantitativa en el registro histórico.
         Valoracion::create([
             'id_practica' => $id_practica,
             'calificacion' => $request->calificacion,
@@ -71,7 +71,6 @@ class ProfesorController extends Controller
             'comentarios_profesor' => $request->comentarios_profesor
         ]);
 
-        // Cambiar estado a FINALIZADA y grabar a fuego la huella del profesor.
         $practica->update([
             'estado' => 'FINALIZADA',
             'id_profesor' => Auth::id()
@@ -99,7 +98,9 @@ class ProfesorController extends Controller
         return $pdf->download('informe_fct_' . $practica->alumno->nombre . '.pdf');
     }
 
-    // Listar alumnos de su centro que no tienen tutor asignado
+    /**
+     * Búsqueda de alumnos sin tutor asignado dentro del centro del profesor.
+     */
     public function alumnosSinTutor()
     {
         $profesor = Auth::user();
@@ -109,14 +110,18 @@ class ProfesorController extends Controller
         return response()->json($alumnos);
     }
 
-    // Listar sus propios alumnos
+    /**
+     * Listado restrictivo de tutorizados.
+     */
     public function misAlumnos()
     {
         $profesor = Auth::user();
         return response()->json(Alumno::where('id_profesor', $profesor->id_profesor)->get());
     }
 
-    // Asignar o desasignar alumno
+    /**
+     * Reclama o libera la tutoría de un alumno específico.
+     */
     public function gestionarTutoria(Request $request, $id_alumno)
     {
         $profesor = Auth::user();
@@ -126,13 +131,15 @@ class ProfesorController extends Controller
             return response()->json(['error' => 'Alumno de otro centro'], 403);
         }
 
-        $accion = $request->accion; // 'reclamar' o 'soltar'
+        $accion = $request->accion; 
         $alumno->update(['id_profesor' => $accion === 'reclamar' ? $profesor->id_profesor : null]);
 
         return response()->json(['message' => 'Tutoría actualizada']);
     }
 
-    // El paso final de seguridad: Profesor aprueba el inicio de prácticas
+    /**
+     * Aprobación del supervisor académico para convalidar el match y dar inicio a la práctica.
+     */
     public function aprobarInicioPractica($id_practica)
     {
         $profesor = Auth::user();

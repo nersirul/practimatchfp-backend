@@ -64,7 +64,7 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 3. Crear 20-25 Centros (Institutos)
+        // 3. Entidades institucionales (Centros Educativos)
         $centros = [];
         $numCentros = $faker->numberBetween(20, 25);
         for ($i = 0; $i < $numCentros; $i++) {
@@ -88,7 +88,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // Agrupar profesores por centro para facilitar la asignación a alumnos
+        // Agrupación de recursos humanos por entidad académica (Indexación)
         $profesoresPorCentro = [];
         foreach ($profesores as $prof) {
             $profesoresPorCentro[$prof->id_centro][] = $prof;
@@ -99,11 +99,11 @@ class DatabaseSeeder extends Seeder
         for ($i = 0; $i < $numAlumnos; $i++) {
             $centroAleatorio = $faker->randomElement($centros);
             
-            // Buscar si hay profesores en este centro
+            // Resolución de relaciones (Centro -> Tutor)
             $profesorId = null;
             if (isset($profesoresPorCentro[$centroAleatorio->id_centro])) {
                 $profesorAleatorio = $faker->randomElement($profesoresPorCentro[$centroAleatorio->id_centro]);
-                // Con un 80% de probabilidad asignamos profesor, sino queda huérfano
+                // Distribución aleatoria de supervisiones (80% tasa de cobertura)
                 $profesorId = $faker->boolean(80) ? $profesorAleatorio->id_profesor : null;
             }
 

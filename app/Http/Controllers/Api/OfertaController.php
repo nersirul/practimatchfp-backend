@@ -33,8 +33,8 @@ class OfertaController extends Controller
         $filtros = $request->only(['modalidad', 'tecnologias']);
 
         $ofertas = Oferta::with(['empresa:id_empresa,nombre_comercial,ciudad', 'tecnologias'])
-            ->where('estado', 'PUBLICADA') // Muro 1: Solo ofertas validadas por el Admin
-            ->where('activa', true)        // Muro 2 (Sprint 8): Solo ofertas NO pausadas por la Empresa
+            ->where('estado', 'PUBLICADA') // Filtro de Capa 1: Aprobación del coordinador
+            ->where('activa', true)        // Filtro de Capa 2: Disponibilidad definida por la empresa
             ->filtros($filtros)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -166,22 +166,30 @@ class OfertaController extends Controller
         $oferta = Oferta::with(['empresa', 'tecnologias'])->findOrFail($id_oferta);
         $user = Auth::user();
 
-        // REGLAS DE VISIBILIDAD DE LA OFERTA (CORREGIDO PHP):
+        // Control de Acceso y Visibilidad condicionado al rol del usuario solicitante
         $esAdmin = isset($user->id_admin);
         $esEmpresaDueña = isset($user->id_empresa) && $user->id_empresa === $oferta->id_empresa;
 
-        // Si NO es el Admin y NO es la empresa que la creó, aplicamos el muro de seguridad:
+        // Si el usuario no ostenta la propiedad funcional de la oferta, se aplican las reglas estrictas de visualización externa:
         if (!$esAdmin && !$esEmpresaDueña) {
-            // Los alumnos y profesores solo pueden ver ofertas que estén PUBLICADAS y ACTIVAS
+            // Estudiantes y Tutores quedan supeditados irrevocablemente al estado activo y publicado de la oferta.
             if ($oferta->estado !== 'PUBLICADA' || !$oferta->activa) {
                 return response()->json(['error' => 'Esta oferta no está disponible actualmente.'], 403);
             }
         }
 
-        // Si pasa los filtros (o es Admin/Dueño), le devolvemos los datos
+        // Retorno canónico si se superan los filtros de autorización
         return response()->json($oferta);
     }
 
+    /**
+     * Alternar el estado Activo/Pausado de una oferta.
+     * Permite a las empresas deshabilitar temporalmente la visibilidad de una vacante en el panel general
+     * sin destruir ni cerrar el registro formal.
+     * 
+     * @param int $id_oferta
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function toggleActiva($id_oferta)
     {
         $empresa = Auth::user();
@@ -200,8 +208,8 @@ class OfertaController extends Controller
         $oferta = Oferta::findOrFail($id_oferta);
         $user = Auth::user();
 
-        // SEGURIDAD: Si es empresa, verificamos que la oferta le pertenezca. 
-        // (Si el user tiene id_admin, se saltará este if y podrá editarla).
+        // Barrera de validación horizontal: Una empresa no puede sobrescribir ofertas de las que no es propietaria.
+        // El SuperAdministrador evade esta barrera implícitamente por su ausencia en id_empresa.
         if (isset($user->id_empresa) && $oferta->id_empresa !== $user->id_empresa) {
             return response()->json(['error' => 'No tienes permiso para editar esta oferta.'], 403);
         }
@@ -223,7 +231,7 @@ class OfertaController extends Controller
             'posibilidad_contratacion'
         ]));
 
-        // Actualizar tecnologías usando sync() para que borre las viejas y ponga las nuevas
+        // Sincronización intermedia N:M para destruir el enrutamiento obsoleto y persistir el listado actulizado.
         if ($request->has('tecnologias')) {
             $oferta->tecnologias()->sync($request->tecnologias);
         }
@@ -242,7 +250,7 @@ class OfertaController extends Controller
 
         $oferta->update([
             'estado' => 'CERRADA',
-            'activa' => false // La ocultamos del buscador automáticamente
+            'activa' => false // Exclusión automática del motor de búsqueda público
         ]);
 
         return response()->json(['message' => 'Oferta cerrada definitivamente.']);

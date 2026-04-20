@@ -35,7 +35,7 @@ class PracticaController extends Controller
         $user = Auth::user();
         if (!$user->id_alumno) return response()->json(['error' => 'Solo alumnos'], 403);
 
-        // Comprobación de dualidad: Una práctica es un intento único en el tiempo
+        // Restricción de duplicidad: Prevención de candidaturas múltiples a un mismo puesto
         $existe = Practica::where('id_alumno', $user->id_alumno)
             ->where('id_oferta', $id_oferta)
             ->exists();
@@ -48,7 +48,7 @@ class PracticaController extends Controller
             'id_alumno' => $user->id_alumno,
             'id_oferta' => $id_oferta,
             'estado' => 'SOLICITADA'
-            // id_profesor se asignará automáticamente en el último ciclo de validación
+            // La asignación del ID del profesor evaluador se delega a la fase de supervisión
         ]);
 
         return response()->json(['message' => 'Solicitud enviada con éxito', 'practica' => $practica], 201);
@@ -84,13 +84,13 @@ class PracticaController extends Controller
     {
         $user = Auth::user();
 
-        // Candado lógico de autorización
+        // Restricción de Autorización Horizontal
         $oferta = Oferta::findOrFail($id_oferta);
         if ($oferta->id_empresa !== $user->id_empresa) {
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        // Obtener el listado denso de candidatos junto a su currículo tecnológico
+        // Extracción Eager-Loaded de los currículos de los candidatos
         $candidaturas = Practica::with(['alumno.tecnologias'])
             ->where('id_oferta', $id_oferta)
             ->get();
@@ -119,7 +119,7 @@ class PracticaController extends Controller
         $practica = Practica::with('oferta')->findOrFail($id_practica);
 
         if ($request->estado === 'ESPERANDO_TUTOR' && $practica->oferta->vacantes !== null) {
-            // Contamos cuántos alumnos ya están ocupando una plaza en esta oferta
+            // Cuantificación de plazas activas para prevenir desbordamiento de vacantes
             $plazasOcupadas = Practica::where('id_oferta', $practica->id_oferta)
                 ->whereIn('estado', ['ESPERANDO_TUTOR', 'EN_CURSO', 'FINALIZADA'])
                 ->count();

@@ -43,7 +43,7 @@ class AuthController extends Controller
 
         $user = null;
 
-        // Recuperar al modelo instanciado desde su propia tabla según el select del frontend
+        // Identificación y recuperación de la entidad orígen según el discriminador de perfil
         switch ($request->tipo) {
             case 'alumno':
                 $user = Alumno::where('email', $request->email)->first();
@@ -59,28 +59,28 @@ class AuthController extends Controller
                 break;
         }
 
-        // Comprobar que realmente existía ese registro en la base de datos
+        // Validación de existencia en el origen de datos
         if (! $user) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales son incorrectas.'],
             ]);
         }
 
-        // Las empresas requieren un chequeo de seguridad extra
+        // Control de Admisión (Exclusivo Sector Privado): Requisito de validación institucional
         if ($request->tipo === 'empresa' && $user->activa == false) {
             throw ValidationException::withMessages([
                 'email' => ['Tu cuenta de empresa está pendiente de validación por el centro educativo.'],
             ]);
         }
 
-        // Validar que el Hash de la BD concuerde con la pass en texto plano
+        // Verificación de credenciales criptográficas
         if (! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales son incorrectas.'],
             ]);
         }
 
-        // Generar un token único asilando el Rol en su metadata de Sanctum
+        // Emisión del JWT/Bearer a través de Sanctum aislando capacidades por rol
         $token = $user->createToken($request->tipo . '-token')->plainTextToken;
 
         return response()->json([

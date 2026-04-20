@@ -43,12 +43,12 @@ class AdminUserController extends Controller
             ->take(5)
             ->get();
 
-        // Usuarios recientes (simplificado con alumnos por demostración)
+        // Selección de cohortes recientes para visualización en Landing/Dashboard
         $usuariosRecientes = Alumno::orderBy('created_at', 'desc')
             ->take(5)
             ->get()
             ->map(function ($user) {
-                // Adaptamos el formato al esperado por el frontend
+                // Adaptación estructural para la tabla del Frontend
                 return [
                     'nombre_completo' => $user->nombre . ' ' . $user->apellidos,
                     'rol' => 'Alumno',
@@ -57,7 +57,7 @@ class AdminUserController extends Controller
                 ];
             });
 
-        // NUEVO: Extraemos las últimas ofertas creadas en el sistema para el panel de control
+        // Extracción de las últimas ofertas creadas en el sistema para auditoría expréss
         $ofertasRecientes = \App\Models\Oferta::with('empresa')
             ->orderBy('created_at', 'desc')
             ->take(10)
@@ -73,7 +73,7 @@ class AdminUserController extends Controller
             'validacionesPendientes' => $validacionesPendientes,
             'practicasRecientes' => $practicasRecientes,
             'usuariosRecientes' => $usuariosRecientes,
-            'ofertasRecientes' => $ofertasRecientes // <-- Enviamos las ofertas al frontend
+            'ofertasRecientes' => $ofertasRecientes
         ]);
     }
 
