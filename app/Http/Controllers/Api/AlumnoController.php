@@ -37,7 +37,7 @@ class AlumnoController extends Controller
         $enProceso = $practicas->where('estado', 'SOLICITADA')->count();
         $seleccionado = $practicas->whereIn('estado', ['EN_CURSO', 'FINALIZADA'])->count();
 
-        // Extracción de catálogo de ofertas públicas recientes para el viewport destacado
+        // Extraer ofertas destacadas recientes (públicas)
         $ofertasDestacadas = \App\Models\Oferta::with('empresa:id_empresa,nombre_comercial,ciudad')
             ->where('estado', 'PUBLICADA')
             ->orderBy('created_at', 'desc')
@@ -82,7 +82,7 @@ class AlumnoController extends Controller
     {
         $user = \App\Models\Alumno::findOrFail(Auth::user()->id_alumno);
 
-        // Verificación de integridad del payload entrante para datos escalares
+        // 1. Validar los datos básicos provenientes del formulario de React (PerfilAlumno.jsx)
         $request->validate([
             'nombre' => 'required',
             'apellidos' => 'required',
@@ -92,20 +92,28 @@ class AlumnoController extends Controller
 
         $user->update($request->only(['nombre', 'apellidos', 'ciclo', 'modalidad_preferida']));
 
-        // Reconstrucción del payload para inyectar metadatos pivotales en la relación N:M
+        // 2. Sincronización de Tecnologías (Relación N:M)
+        // Construimos el array especial que prepare Eloquent para insertar
+        // el id de la tecnología como clave y sus columnas pivot como valores.
+        if ($request->has('tecnologias')) {
+            $syncData = [];
+            foreach ($request->input('tecnologias') as $tec) {
+                $syncData[$tec['id_tecnologia']] = [
+                    'nivel' => $tec['nivel'] ?? 1,
+                    'tipo_relacion' => $tec['tipo_relacion'] ?? 'INTERES'
+                ];
+            }
+            // Utilizamos sync() para borrar las antiguas que desmarcó e insertar las nuevas/mantenidas
             $user->tecnologias()->sync($syncData);
         }
 
         return response()->json(['message' => 'Perfil actualizado', 'user' => $user->load('tecnologias')]);
     }
 
-    /**
-     * Recuperación en tiempo real del contexto académico.
-     * Retorna la asociación del estudiante con su centro oficial y supervisor.
-     */
+    // Obtener datos del centro y tutor en tiempo real
     public function infoAcademica()
     {
-        // Eager Loading para hidratar las entidades relacionadas de nivel 1
+        // Cogemos al alumno logueado y cargamos mágicamente sus relaciones
         $alumno = \App\Models\Alumno::with(['centro', 'profesor'])->findOrFail(Auth::user()->id_alumno);
 
         return response()->json([
