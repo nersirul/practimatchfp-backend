@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/alumno/perfil', [AlumnoController::class, 'update']);
     Route::get('/alumno/candidaturas', [\App\Http\Controllers\Api\PracticaController::class, 'misCandidaturas']);
     Route::get('/alumno/info-academica', [\App\Http\Controllers\Api\AlumnoController::class, 'infoAcademica']);
+    Route::post('/alumno/practicas/{id_practica}/valorar', [\App\Http\Controllers\Api\PracticaController::class, 'valorarEmpresa']);
 
     /**
      * MÓDULO CORE: OFERTAS Y CANDIDATURAS (MATCH)

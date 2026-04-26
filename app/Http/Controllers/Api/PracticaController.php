@@ -133,4 +133,32 @@ class PracticaController extends Controller
 
         return response()->json(['message' => 'Estado actualizado a ' . $request->estado]);
     }
+
+    public function valorarEmpresa(Request $request, $id_practica)
+    {
+        $request->validate([
+            'puntuacion_empresa' => 'required|integer|min:1|max:5',
+            'comentario_alumno' => 'nullable|string|max:500'
+        ]);
+
+        // Buscamos la práctica asegurándonos de que pertenece al alumno logueado
+        $practica = Practica::where('id_alumno', Auth::user()->id_alumno)->findOrFail($id_practica);
+
+        // Regla de Negocio 1: Solo prácticas terminadas
+        if ($practica->estado !== 'FINALIZADA') {
+            return response()->json(['error' => 'Solo puedes valorar unas prácticas que ya han finalizado.'], 403);
+        }
+
+        // Regla de Negocio 2: Solo se vota una vez
+        if ($practica->puntuacion_empresa !== null) {
+            return response()->json(['error' => 'Ya has valorado esta experiencia anteriormente.'], 400);
+        }
+
+        $practica->update([
+            'puntuacion_empresa' => $request->puntuacion_empresa,
+            'comentario_alumno' => $request->comentario_alumno
+        ]);
+
+        return response()->json(['message' => '¡Gracias por tu feedback! Valoración guardada con éxito.']);
+    }
 }

@@ -35,6 +35,8 @@ class Practica extends Model
         'fecha_inicio',
         'fecha_fin',
         'estado',
+        'puntuacion_empresa',
+        'comentario_alumno',
         'id_profesor',
     ];
 

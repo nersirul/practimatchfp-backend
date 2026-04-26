@@ -20,6 +20,7 @@ use App\Models\Tecnologia;
 use App\Models\Oferta;
 use App\Models\Profesor;
 use App\Models\Centro;
+use App\Models\Practica;
 use Faker\Factory as Faker;
 
 class DatabaseSeeder extends Seeder
@@ -43,7 +44,7 @@ class DatabaseSeeder extends Seeder
             'password' => $password,
         ]);
 
-        // 2. Crear Diccionario Amplio de Categorías y Tecnologías
+        // 2. Crear Diccionario Amplio de Categorías y Tecnologías (MANTENIDO INTACTO)
         $categoriasData = [
             'Desarrollo de Software' => ['PHP', 'JavaScript', 'Python', 'Java', 'C#', 'C++', 'Ruby', 'Swift', 'Kotlin', 'Go', 'React', 'Angular', 'Vue.js', 'Node.js', 'Laravel', 'Spring Boot', '.NET'],
             'Sistemas y Redes' => ['Linux', 'Windows Server', 'Cisco', 'Active Directory', 'Proxmox', 'VMware', 'Bash', 'PowerShell', 'Nginx', 'Apache'],
@@ -51,7 +52,7 @@ class DatabaseSeeder extends Seeder
             'Ciberseguridad' => ['Kali Linux', 'Wireshark', 'Metasploit', 'Nmap', 'Burp Suite', 'Snort', 'Security+'],
             'Big Data & IA' => ['Hadoop', 'Spark', 'TensorFlow', 'PyTorch', 'PowerBI', 'Tableau', 'Pandas', 'MongoDB', 'Redis', 'Elasticsearch']
         ];
-        
+
         $todasTecnologias = []; // Guardamos referencia para asignar aleatoriamente después
 
         foreach ($categoriasData as $catName => $techs) {
@@ -64,8 +65,90 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 3. Entidades institucionales (Centros Educativos)
-        $centros = [];
+        // =================================================================
+        // 3. CREACIÓN DEL ESCENARIO DE PRUEBAS (TRIO RELACIONADO)
+        // =================================================================
+
+        // Centro de Pruebas
+        $centroPruebas = Centro::create(['nombre' => 'Centro de Formación Especial']);
+
+        // Profesor Especial
+        $profesorEspecial = Profesor::create([
+            'id_centro' => $centroPruebas->id_centro,
+            'nombre' => 'Profesor',
+            'apellidos' => 'Test',
+            'email' => 'profesor@profesor.com',
+            'password' => $password,
+            'telefono' => '600000001',
+            'departamento' => 'Informática'
+        ]);
+
+        // Alumno Especial (Vinculado al profesor y centro)
+        $alumnoEspecial = Alumno::create([
+            'id_centro' => $centroPruebas->id_centro,
+            'id_profesor' => $profesorEspecial->id_profesor,
+            'nombre' => 'Alumno',
+            'apellidos' => 'Especial',
+            'nif' => '12345678Z',
+            'email' => 'alumno@alumno.com',
+            'password' => $password,
+            'ciclo' => 'DAW',
+            'modalidad_preferida' => 'HIBRIDO',
+            'telefono' => '600000002',
+            'direccion' => 'Calle Principal 1',
+            'ciudad' => 'Madrid',
+        ]);
+
+        // Inyectarle al alumno especial algunas tecnologías conocidas
+        $alumnoEspecial->tecnologias()->attach($todasTecnologias[0]->id_tecnologia, ['nivel' => 8, 'tipo_relacion' => 'CONOCE']);
+        $alumnoEspecial->tecnologias()->attach($todasTecnologias[1]->id_tecnologia, ['nivel' => 7, 'tipo_relacion' => 'CONOCE']);
+
+        // Empresa Especial
+        $empresaEspecial = Empresa::create([
+            'nombre_comercial' => 'Empresa Especial S.A.',
+            'cif' => 'B00000000',
+            'email_contacto' => 'empresa@empresa.com',
+            'password' => $password,
+            'sector' => 'Desarrollo de Software',
+            'descripcion' => 'Empresa creada para pruebas de integración del sistema.',
+            'telefono_contacto' => '912345678',
+            'direccion' => 'Avenida de la Tecnología 40',
+            'ciudad' => 'Madrid',
+            'activa' => true,
+        ]);
+
+        // Oferta para la Empresa Especial
+        $ofertaEspecial = Oferta::create([
+            'id_empresa' => $empresaEspecial->id_empresa,
+            'id_admin_validador' => 1,
+            'titulo' => 'Beca Fullstack Especial',
+            'descripcion' => 'Oferta de prácticas diseñada para el alumno especial.',
+            'modalidad' => 'HIBRIDO',
+            'es_remunerada' => true,
+            'posibilidad_contratacion' => true,
+            'estado' => 'PUBLICADA',
+            'vacantes' => 2,
+            'activa' => true
+        ]);
+        $ofertaEspecial->tecnologias()->attach([$todasTecnologias[0]->id_tecnologia, $todasTecnologias[1]->id_tecnologia]);
+
+        // Crear una PRÁCTICA FINALIZADA con VALORACIÓN para el Alumno Especial
+        Practica::create([
+            'id_alumno' => $alumnoEspecial->id_alumno,
+            'id_oferta' => $ofertaEspecial->id_oferta,
+            'id_profesor' => $profesorEspecial->id_profesor,
+            'estado' => 'FINALIZADA',
+            'puntuacion_empresa' => 5, // Valoración de 5 estrellas ya pre-cargada
+            'comentario_alumno' => 'Una experiencia increíble, el ambiente de trabajo es fantástico y el tutor de la empresa me ayudó en todo.'
+        ]);
+
+
+        // =================================================================
+        // 4. GENERACIÓN MASIVA (DUMMY DATA RESTANTE)
+        // =================================================================
+
+        // 3. Entidades institucionales (Centros Educativos adicionales)
+        $centros = [$centroPruebas];
         $numCentros = $faker->numberBetween(20, 25);
         for ($i = 0; $i < $numCentros; $i++) {
             $centros[] = Centro::create([
@@ -98,21 +181,19 @@ class DatabaseSeeder extends Seeder
         $numAlumnos = 150;
         for ($i = 0; $i < $numAlumnos; $i++) {
             $centroAleatorio = $faker->randomElement($centros);
-            
+
             // Resolución de relaciones (Centro -> Tutor)
             $profesorId = null;
             if (isset($profesoresPorCentro[$centroAleatorio->id_centro])) {
                 $profesorAleatorio = $faker->randomElement($profesoresPorCentro[$centroAleatorio->id_centro]);
-                // Distribución aleatoria de supervisiones (80% tasa de cobertura)
                 $profesorId = $faker->boolean(80) ? $profesorAleatorio->id_profesor : null;
             }
 
-            // Generar DNI o NIE realista
-            $nif = $faker->unique()->numerify('########') . $faker->randomElement(['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Y','Z']);
+            $nif = $faker->unique()->numerify('########') . $faker->randomElement(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z']);
 
             $alumno = Alumno::create([
                 'id_centro' => $centroAleatorio->id_centro,
-                'id_profesor' => $profesorId, 
+                'id_profesor' => $profesorId,
                 'nombre' => $faker->firstName,
                 'apellidos' => $faker->lastName . ' ' . $faker->lastName,
                 'nif' => $nif,
@@ -138,7 +219,7 @@ class DatabaseSeeder extends Seeder
         // 6. Crear 50 Empresas
         for ($i = 0; $i < 50; $i++) {
             $cif = 'B' . $faker->unique()->numerify('########');
-            
+
             $empresa = Empresa::create([
                 'nombre_comercial' => $faker->unique()->company,
                 'cif' => $cif,
@@ -155,7 +236,6 @@ class DatabaseSeeder extends Seeder
             // Crear entre 1 y 10 Ofertas por empresa
             $numOfertas = $faker->numberBetween(1, 10);
             for ($o = 0; $o < $numOfertas; $o++) {
-                // Generar ofertas mayoritariamente publicadas
                 $estadoOferta = $faker->randomElement(['PUBLICADA', 'PUBLICADA', 'PUBLICADA', 'PENDIENTE', 'CERRADA']);
 
                 $oferta = Oferta::create([
@@ -164,17 +244,36 @@ class DatabaseSeeder extends Seeder
                     'titulo' => $faker->randomElement(['Desarrollador Junior ', 'Técnico de Sistemas ', 'Prácticas en Ciberseguridad ', 'Beca Consultoría ', 'Analista Junior de Datos ']) . $faker->randomElement(['', '(Remoto)', '- Urgente']),
                     'descripcion' => $faker->paragraph(4),
                     'modalidad' => $faker->randomElement(['REMOTO', 'PRESENCIAL', 'HIBRIDO']),
-                    'es_remunerada' => $faker->boolean(40), // 40% son remuneradas
-                    'posibilidad_contratacion' => $faker->boolean(75), // 75% tienen posibilidad real de contratación
+                    'es_remunerada' => $faker->boolean(40),
+                    'posibilidad_contratacion' => $faker->boolean(75),
                     'estado' => $estadoOferta,
                     'vacantes' => $faker->numberBetween(1, 5),
-                    'activa' => true // la oferta por defecto activa
+                    'activa' => true
                 ]);
 
                 // Asignar requisitos (tecnologías) para la oferta
                 $techsOferta = $faker->randomElements($todasTecnologias, $faker->numberBetween(1, 4));
                 $idsParaAttach = array_map(fn($t) => $t->id_tecnologia, $techsOferta);
                 $oferta->tecnologias()->attach($idsParaAttach);
+
+                // =================================================================
+                // 7. PRÁCTICAS ALEATORIAS CON VALORACIONES
+                // =================================================================
+                // Si la oferta está cerrada o publicada, simulamos que algún alumno la cursó
+                if ($faker->boolean(20)) {
+                    $alumnoRandom = Alumno::inRandomOrder()->first();
+                    $estadoPractica = $faker->randomElement(['SOLICITADA', 'EN_CURSO', 'FINALIZADA', 'RECHAZADA']);
+
+                    $practica = Practica::create([
+                        'id_alumno' => $alumnoRandom->id_alumno,
+                        'id_oferta' => $oferta->id_oferta,
+                        'id_profesor' => $alumnoRandom->id_profesor, // Puede ser null si no tiene tutor
+                        'estado' => $estadoPractica,
+                        // Solo valoramos si está finalizada
+                        'puntuacion_empresa' => ($estadoPractica === 'FINALIZADA') ? $faker->numberBetween(1, 5) : null,
+                        'comentario_alumno' => ($estadoPractica === 'FINALIZADA' && $faker->boolean(60)) ? $faker->sentence() : null
+                    ]);
+                }
             }
         }
     }
