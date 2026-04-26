@@ -123,4 +123,9 @@ class Oferta extends Model
         // Restringir a vacantes activamente públicas
         return $query->where('estado', 'PUBLICADA');
     }
+
+    public function tienePlazasDisponibles(): bool
+    {
+        return $this->vacantes > 0 && $this->activa;
+    }
 }

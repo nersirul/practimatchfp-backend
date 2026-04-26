@@ -121,4 +121,17 @@ class Alumno extends Authenticatable
     {
         return $this->belongsTo(Profesor::class, 'id_profesor', 'id_profesor');
     }
+
+    public function getNombreCompletoAttribute()
+    {
+        return trim("{$this->nombre} {$this->apellidos}");
+    }
+
+    /**
+     * Verifica si el alumno ya tiene un profesor/tutor del centro asignado.
+     */
+    public function tieneTutorAsignado(): bool
+    {
+        return !is_null($this->id_profesor);
+    }
 }

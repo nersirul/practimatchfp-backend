@@ -2,11 +2,9 @@
 
 /**
  * Controlador de API - AuthController
- * 
- * Núcleo de autenticación. Maneja la emisión de Tokens (Sanctum),
+ * * Núcleo de autenticación. Maneja la emisión de Tokens (Sanctum),
  * los registros dinámicos según el perfil y el inicio de sesión.
- * 
- * @package App\Http\Controllers\Api
+ * * @package App\Http\Controllers\Api
  */
 
 namespace App\Http\Controllers\Api;
@@ -24,14 +22,6 @@ class AuthController extends Controller
 {
     /**
      * Endpoint de Autenticación (Login Múltiple).
-     * 
-     * Recibe correo electrónico, contraseña y un string identificando qué "tipo"
-     * de perfil está intentando acceder. Realiza las validaciones de negocio
-     * (por ejemplo, comprobar si una empresa está activada) y retorna el token.
-     * 
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Validation\ValidationException Si la autenticación falla.
      */
     public function login(Request $request)
     {
@@ -93,18 +83,14 @@ class AuthController extends Controller
 
     /**
      * Registro rápido exclusivo para alumnos (Legacy / Alternatif).
-     * 
-     * Usado internamente o en flujos reducidos si fuera necesario.
-     * 
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function registerAlumno(Request $request)
     {
         $request->validate([
             'nombre' => 'required',
             'apellidos' => 'required',
-            'nif' => 'required|unique:alumnos',
+            // NUEVO: Regla Regex estricta (8 números y 1 letra)
+            'nif' => ['required', 'unique:alumnos', 'regex:/^[0-9]{8}[A-Za-z]$/'],
             'email' => 'required|email|unique:alumnos',
             'password' => 'required|min:6',
             'nombre_centro' => 'required|string',
@@ -119,7 +105,7 @@ class AuthController extends Controller
             'id_centro' => $centro->id_centro,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'modalidad_preferida' => 'PRESENCIAL' // Asiganación por defecto
+            'modalidad_preferida' => 'PRESENCIAL' // Asignación por defecto
         ]);
 
         return response()->json([
@@ -130,12 +116,6 @@ class AuthController extends Controller
 
     /**
      * Cierre limpio de sesión.
-     * 
-     * Invalida (borrando de la BD de Sanctum) el token exacto con el que 
-     * el usuario hizo la petición actual, sin desconectarlo de otros dispositivos.
-     * 
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function logout(Request $request)
     {
@@ -145,12 +125,6 @@ class AuthController extends Controller
 
     /**
      * Endpoint de Registro Unificado inteligente.
-     * 
-     * Valida según reglas distintas la creación de alumno, empresa o profesor en 
-     * base a lo emitido por el formulario único de react.
-     * 
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function registro(Request $request)
     {
@@ -162,7 +136,8 @@ class AuthController extends Controller
         if ($request->tipo === 'alumno') {
             $request->validate([
                 'nombre_centro' => 'required|string',
-                'nif' => 'required|string|unique:alumnos,nif',
+                // NUEVO: Regla Regex estricta (8 números y 1 letra)
+                'nif' => ['required', 'string', 'unique:alumnos,nif', 'regex:/^[0-9]{8}[A-Za-z]$/'],
                 'nombre' => 'required|string|max:255',
                 'apellidos' => 'required|string|max:255',
                 'email' => 'required|email|unique:alumnos,email',
@@ -186,9 +161,11 @@ class AuthController extends Controller
                 'direccion' => $request->direccion,
                 'ciudad' => $request->ciudad,
             ]);
+
         } elseif ($request->tipo === 'empresa') {
             $request->validate([
-                'cif' => 'required|string|unique:empresas,cif',
+                // NUEVO: Regla Regex estricta (1 letra y 8 números)
+                'cif' => ['required', 'string', 'unique:empresas,cif', 'regex:/^[A-Za-z][0-9]{8}$/'],
                 'nombre_comercial' => 'required|string|max:255',
                 'email' => 'required|email|unique:empresas,email_contacto',
                 'telefono_contacto' => 'required|string',
@@ -207,6 +184,7 @@ class AuthController extends Controller
                 'ciudad' => $request->ciudad,
                 'descripcion' => $request->descripcion,
             ]);
+
         } elseif ($request->tipo === 'profesor') {
             $request->validate([
                 'nombre_centro' => 'required|string',
