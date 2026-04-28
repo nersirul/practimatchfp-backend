@@ -10,6 +10,9 @@ class SeguridadOfertasTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Test de que una empresa no puede editar las ofertas de otra empresa
+     */
     public function test_una_empresa_no_puede_editar_las_ofertas_de_otra_empresa()
     {
         $admin = Administrador::create(['nombre' => 'A', 'email' => 'a@a.com', 'password' => '123']);

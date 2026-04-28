@@ -12,6 +12,9 @@ class FlujoPracticasTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Test de un alumno puede solicitar una oferta activa
+     */
     public function test_un_alumno_puede_solicitar_una_oferta_activa()
     {
         $admin = Administrador::create(['nombre' => 'Admin', 'email' => 'admin@test.com', 'password' => '123']);

@@ -124,6 +124,10 @@ class Oferta extends Model
         return $query->where('estado', 'PUBLICADA');
     }
 
+    /**
+     * Verifica si la oferta tiene plazas disponibles.
+     * @return bool
+     */
     public function tienePlazasDisponibles(): bool
     {
         return $this->vacantes > 0 && $this->activa;

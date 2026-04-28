@@ -115,4 +115,9 @@ Route::middleware('auth:sanctum')->group(function () {
      * Abierto tanto para Empresa, Profesor y Alumno (cada quien ve su FCT).
      */
     Route::get('/practicas/{id_practica}/pdf', [\App\Http\Controllers\Api\ProfesorController::class, 'descargarPDF']);
+    
+    Route::get('/cmd/storage-link', function () {
+        \Illuminate\Support\Facades\Artisan::call('storage:link');
+        return 'Enlace de almacenamiento creado con éxito.';
+    });
 });

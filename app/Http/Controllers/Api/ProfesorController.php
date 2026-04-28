@@ -153,6 +153,11 @@ class ProfesorController extends Controller
         return response()->json(['message' => 'Práctica iniciada oficialmente.']);
     }
 
+    /**
+     * Perfil del profesor.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function updatePerfil(Request $request)
     {
         $profesor = \App\Models\Profesor::findOrFail(Auth::user()->id_profesor);

@@ -7,6 +7,9 @@ class ValidacionAlumnoTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Test de que el nif del alumno debe tener un formato valido
+     */
     public function test_el_nif_del_alumno_debe_tener_un_formato_valido()
     {
         // 1. DATO INVÁLIDO (Completamos todos los campos para que no salte error por campos vacíos)

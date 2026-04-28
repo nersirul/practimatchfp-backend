@@ -7,6 +7,9 @@ class ValidacionEmpresaTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Test de que el cif y el email de la empresa deben cumplir las reglas
+     */
     public function test_el_cif_y_email_de_empresa_deben_cumplir_las_reglas()
     {
         $payloadInvalido = [

@@ -15,6 +15,9 @@ class FlujoProfesorTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Test de el profesor puede autorizar el inicio de una practica
+     */
     public function test_el_profesor_puede_autorizar_el_inicio_de_una_practica()
     {
         $admin = Administrador::create(['nombre' => 'A', 'email' => 'a@a.com', 'password' => '123']);

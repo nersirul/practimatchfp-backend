@@ -134,6 +134,13 @@ class PracticaController extends Controller
         return response()->json(['message' => 'Estado actualizado a ' . $request->estado]);
     }
 
+    /**
+     * Valoración del Alumno hacia la Empresa.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id_practica
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function valorarEmpresa(Request $request, $id_practica)
     {
         $request->validate([
